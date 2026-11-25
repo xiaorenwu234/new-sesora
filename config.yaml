@@ -88,3 +88,8 @@ safety:
 
 slo_file: benchmarks/slo/boutique_slo.yaml
 output_dir: runs
+
+architecture:
+  service_priorities: {}  # 服务规范名 -> P 值，critical_services 默认 P0
+  audit_log: null         # Kubernetes Audit JSONL，需包含 Request 或 RequestResponse 级别事件
+  docker_inspect: null    # docker inspect 输出的 JSON 文件

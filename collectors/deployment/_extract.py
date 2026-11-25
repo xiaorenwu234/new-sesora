@@ -25,7 +25,9 @@ def extract_deployment(doc: dict, view: str, system_id: str, version: str,
     method = f"{source}:{view}"
     evs = []
 
-    evs.append(_ev("replica_count", name, {"replicas": spec.get("replicas", 1)},
+    evs.append(_ev("replica_count", name,
+                   {"replicas": spec.get("replicas", 1),
+                    "ready_replicas": doc.get("status", {}).get("readyReplicas")},
                    loc, view, system_id, version, source, method))
     evs.append(_ev("update_strategy", name,
                    {"type": spec.get("strategy", {}).get("type", "RollingUpdate"),
@@ -37,6 +39,11 @@ def extract_deployment(doc: dict, view: str, system_id: str, version: str,
 
     for c in containers:
         cname = c.get("name", name)
+        pod_security = tmpl.get("securityContext") or {}
+        container_security = c.get("securityContext") or {}
+        evs.append(_ev("security_context", name,
+                       {"container": cname, **pod_security, **container_security},
+                       loc, view, system_id, version, source, method))
         evs.append(_ev("container_image", name,
                        {"container": cname, "image": c.get("image", ""),
                         "digest": c.get("imageID", "") if view == "OBSERVED_CONFIG" else ""},
@@ -70,7 +77,7 @@ def extract_deployment(doc: dict, view: str, system_id: str, version: str,
     evs.append(_ev("volume_configuration", name,
                    {"volumes": [{k: v for k, v in v.items() if k != "name"} | {"name": v.get("name")}
                                 for v in vols],
-                    "host_path": any("hostPath" in v for v in vols),
+                    "host_path": any(v.get("hostPath") or v.get("host_path") for v in vols),
                     "empty_dir": any("emptyDir" in v for v in vols)},
                    loc, view, system_id, version, source, method))
     evs.append(_ev("service_account", name,

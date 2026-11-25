@@ -21,6 +21,23 @@ def collect(cfg: Config, profile: dict) -> dict:
     sid = cfg.system_id
     evs: list[Evidence] = []
     snapshot = {"deployments": {}, "services": {}, "pods": {}, "hpas": {}}
+    namespace = f"namespace/{ns}"
+    try:
+        quotas = core.list_namespaced_resource_quota(ns).items
+        evs.append(Evidence(
+            kind="namespace_quotas", layer="deployment", subject=namespace,
+            attrs={"quotas": [q.metadata.name for q in quotas]}, source="k8s_api",
+            method="resource quota listing", location=namespace,
+            config_view="OBSERVED_CONFIG", system_id=sid))
+    except client.exceptions.ApiException:
+        pass
+
+    zones = {}
+    try:
+        zones = {node.metadata.name: (node.metadata.labels or {}).get("topology.kubernetes.io/zone")
+                 for node in core.list_node().items}
+    except client.exceptions.ApiException:
+        pass
 
     for d in apps.list_namespaced_deployment(ns).items:
         doc = d.to_dict()
@@ -28,6 +45,7 @@ def collect(cfg: Config, profile: dict) -> dict:
         spec = doc["spec"]
         tmpl = spec["template"]["spec"]
         norm = {
+            "status": {"readyReplicas": (doc.get("status") or {}).get("ready_replicas") or 0},
             "metadata": {"name": doc["metadata"]["name"],
                          "labels": doc["metadata"].get("labels") or {},
                          "annotations": doc["metadata"].get("annotations") or {}},
@@ -66,11 +84,18 @@ def collect(cfg: Config, profile: dict) -> dict:
         statuses = doc.get("status", {}).get("container_statuses") or []
         restarts = sum(cs.get("restart_count", 0) for cs in statuses)
         ready = all(cs.get("ready", False) for cs in statuses) if statuses else False
+        node = doc["spec"].get("node_name")
+        created = doc["metadata"].get("creation_timestamp")
+        conditions = doc.get("status", {}).get("conditions") or []
+        ready_since = next((c.get("last_transition_time") for c in conditions
+                            if c.get("type") == "Ready" and c.get("status") == "True"), None)
+        startup_s = ((ready_since - created).total_seconds()
+                     if ready_since and created and restarts == 0 else None)
         evs.append(Evidence(
             kind="pod_status", layer="deployment", subject=_owner_deployment(doc) or name,
             attrs={"pod": name, "phase": doc.get("status", {}).get("phase"),
                    "ready": ready, "restarts": restarts,
-                   "node": doc["spec"].get("node_name"),
+                   "node": node, "zone": zones.get(node), "startup_s": startup_s,
                    "image_ids": [cs.get("image_id", "") for cs in statuses]},
             source="k8s_api", method="pod listing", location=f"pod/{name}",
             config_view="OBSERVED_CONFIG", system_id=sid))
@@ -101,6 +126,7 @@ def _norm_pod_spec(tmpl: dict) -> dict:
     for c in tmpl.get("containers") or []:
         containers.append({
             "name": c.get("name"), "image": c.get("image"),
+            "securityContext": _norm_security(c.get("security_context")),
             "resources": c.get("resources") or {},
             "readinessProbe": _norm_probe(c.get("readiness_probe")),
             "livenessProbe": _norm_probe(c.get("liveness_probe")),
@@ -113,9 +139,19 @@ def _norm_pod_spec(tmpl: dict) -> dict:
                       for p in (c.get("ports") or [])],
         })
     return {"containers": containers,
+            "securityContext": _norm_security(tmpl.get("security_context")),
             "terminationGracePeriodSeconds": tmpl.get("termination_grace_period_seconds", 30),
             "volumes": tmpl.get("volumes") or [],
             "serviceAccountName": tmpl.get("service_account_name", "default")}
+
+
+def _norm_security(context):
+    if not context:
+        return {}
+    keys = {"run_as_non_root": "runAsNonRoot", "run_as_user": "runAsUser",
+            "allow_privilege_escalation": "allowPrivilegeEscalation",
+            "read_only_root_filesystem": "readOnlyRootFilesystem"}
+    return {keys.get(key, key): value for key, value in context.items() if value is not None}
 
 
 def _norm_probe(p):

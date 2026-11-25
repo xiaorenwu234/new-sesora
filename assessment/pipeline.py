@@ -16,6 +16,7 @@ from common.config import Config, new_run_dir
 from common.llm import LLMClient
 from common.models import Budget, Finding, ContractState as CS, READONLY_ACTIONS
 from contracts.loader import load_contracts, load_slo
+from collectors import architecture
 from collectors.source import semgrep_adapter, tree_sitter_adapter
 from collectors.deployment import k8s_collector, manifest_collector
 from collectors.runtime import jaeger_collector, prometheus_collector, event_collector
@@ -112,7 +113,7 @@ def step_collect(ctx: AssessmentContext) -> dict:
     manifest = manifest_collector.collect(cfg, profile)
     k8s = k8s_collector.collect(cfg, profile)
     jaeger_res = jaeger_collector.collect(cfg, profile)
-    prom_res = prometheus_collector.collect(cfg, profile)
+    prom_res = prometheus_collector.collect(cfg, profile, k8s.get("snapshot", {}))
     events = event_collector.collect(cfg, profile)
     extra = external_tools.run_kubelinter(cfg)
     extra += external_tools.run_conftest(
@@ -123,6 +124,13 @@ def step_collect(ctx: AssessmentContext) -> dict:
     for ev in semgrep_ev + extra:
         ctx.graph.add_evidence(ev)
 
+    extra_evidence, architecture_meta = architecture.collect(cfg, profile)
+    for ev in extra_evidence:
+        if ev.layer == "deployment" and not ev.subject.startswith(("namespace/", "container/")):
+            ev.subject = ctx.graph.resolver.resolve_deployment(ev.subject) or ev.subject
+        ctx.graph.add_evidence(ev)
+    meta["architecture"] = architecture_meta
+
     meta.update({
         "source_evidence": len(semgrep_ev) + len(ts_facts["evidence"]),
         "functions": len(ts_facts["functions"]), "calls": len(ts_facts["calls"]),
@@ -131,6 +139,7 @@ def step_collect(ctx: AssessmentContext) -> dict:
         "runtime_evidence": len(runtime_ev),
         "jaeger_available": jaeger_res.get("available", False),
         "prometheus_available": prom_res.get("available", False),
+        "architecture_metric_errors": prom_res.get("architecture_metric_errors", {}),
         "alignment": alignment,
         "graph_degraded": ctx.graph.degraded,
         "finished_at": time.time()})

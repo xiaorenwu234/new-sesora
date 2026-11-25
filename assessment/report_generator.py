@@ -96,6 +96,9 @@ def to_markdown(report: dict) -> str:
     L.append(f"\n- Run: `{meta['run_id']}`  命名空间: `{meta['namespace']}`")
     L.append(f"- LLM Agent: {'启用' if meta['llm_enabled'] else '确定性回退模式'}"
              f"  图谱: {'Neo4j 降级(内存)' if meta['graph_degraded'] else 'Neo4j'}")
+    for source, status in report.get("collection_meta", {}).get("architecture", {}).items():
+        if status.get("error"):
+            L.append(f"- {source} 采集失败：{status['error']}")
     cov = report["coverage_summary"]
     L.append("\n## 覆盖率摘要\n")
     L.append(f"| 适用契约-服务对 | 已判定 | 待验证 | 不确定 | 覆盖率 |")
