@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from common.models import ContractState as CS, Hypothesis
 from analyzers.compliance_checker import check, SEVERITY_WEIGHT
+from analyzers import architecture
 
 
 def generate(graph, contracts, system_id: str) -> tuple[list, list]:
@@ -19,12 +20,12 @@ def generate(graph, contracts, system_id: str) -> tuple[list, list]:
     direct, hypotheses = [], []
     seen = set()
     for c in contracts:
-        for svc in graph.services():
+        targets = architecture.targets(graph, c) if c.static_check in architecture.CHECKS else graph.services()
+        for svc in targets:
             props = graph.service_props(svc)
             if props.get("infra"):
                 continue
-            tags = graph.service_tags(svc)
-            if not set(c.requires) <= tags:
+            if c.requires and not set(c.requires) <= graph.service_tags(svc):
                 continue
             key = (c.id, svc)
             if key in seen:
@@ -38,7 +39,7 @@ def generate(graph, contracts, system_id: str) -> tuple[list, list]:
                 result = check(graph, c, svc)
 
             state = result["state"]
-            if state in (CS.VIOLATED.value, CS.COMPLIANT.value):
+            if state in (CS.VIOLATED.value, CS.COMPLIANT.value) or not c.actions:
                 direct.append((c, svc, result))
                 continue
             if state == CS.NOT_APPLICABLE.value:

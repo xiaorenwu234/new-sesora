@@ -95,6 +95,9 @@ def cmd_experiment(args):
     if c is None:
         print(f"未知契约: {args.contract}", file=sys.stderr)
         return 1
+    if not c.actions:
+        print(f"{c.id} 由证据直接判定，请使用 assess", file=sys.stderr)
+        return 1
     h = next((x for x in ctx.hypotheses
               if x.contract_id == args.contract and x.target == args.target), None)
     if h is None:

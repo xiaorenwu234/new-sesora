@@ -161,7 +161,8 @@ def step_deterministic(ctx: AssessmentContext) -> dict:
             continue
         f = Finding(
             contract_id=c.id, target=svc, state=state,
-            category="compliance_violation" if state == CS.VIOLATED.value else "compliance",
+            category={CS.VIOLATED.value: "compliance_violation",
+                      CS.COMPLIANT.value: "compliance"}.get(state, "unconfirmed_risk"),
             severity=c.severity, dimension=c.dimension,
             summary=f"{c.name}: {result['detail']}",
             evidence_ids=result.get("evidence_ids", []),
@@ -200,7 +201,9 @@ def step_deterministic(ctx: AssessmentContext) -> dict:
 
 
 def step_hypothesis_agent(ctx: AssessmentContext):
-    ctx.hypotheses = ctx.hypothesis_agent.run(ctx.hypotheses, ctx.contracts_by_id)
+    agent_contracts = {contract_id: contract for contract_id, contract in ctx.contracts_by_id.items()
+                       if contract.actions}
+    ctx.hypotheses = ctx.hypothesis_agent.run(ctx.hypotheses, agent_contracts)
     for h in ctx.hypotheses:
         if h.hypothesis_id not in ctx.graph.nodes:
             ctx.graph.add_hypothesis(h)   # agent_proposed 新假设：建完整关系边

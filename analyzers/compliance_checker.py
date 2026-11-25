@@ -10,6 +10,7 @@ from __future__ import annotations
 import networkx as nx
 
 from common.models import ContractState as CS
+from analyzers import architecture
 
 SEVERITY_WEIGHT = {"critical": 1.0, "high": 0.8, "medium": 0.5, "low": 0.2}
 
@@ -260,6 +261,7 @@ def _no_cycles(g, c, svc):
 
 
 CHECKS = {
+    **architecture.CHECKS,
     "resource_limits_required": _resource_limits,
     "probes_and_replicas": _probes_replicas,
     "scaling_config_present": _scaling_config,

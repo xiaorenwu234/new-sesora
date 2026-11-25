@@ -58,9 +58,10 @@ def _hypotheses_only(ctx):
 def _no_kg_deterministic(ctx):
     """no_kg：确定性契约检查保留，关闭图算法（依赖环检测）。"""
     import analyzers.risk_generator as rg
+    from analyzers.architecture import GRAPH_CHECKS
     ctx.graph_analysis = {"disabled": "no_kg ablation"}
     kg_contracts = [c for c in ctx.contracts
-                    if c.static_check != "no_dependency_cycles"]
+                    if c.static_check not in GRAPH_CHECKS | {"no_dependency_cycles"}]
     direct, hypotheses = rg.generate(ctx.graph, kg_contracts, ctx.cfg.system_id)
     for c, svc, result in direct:
         ctx.coverage[(c.id, svc)] = result["state"]
@@ -68,8 +69,8 @@ def _no_kg_deterministic(ctx):
             continue
         ctx.findings.append(Finding(
             contract_id=c.id, target=svc, state=result["state"],
-            category="compliance_violation" if result["state"] == CS.VIOLATED.value
-            else "compliance",
+            category={CS.VIOLATED.value: "compliance_violation",
+                      CS.COMPLIANT.value: "compliance"}.get(result["state"], "unconfirmed_risk"),
             severity=c.severity, dimension=c.dimension,
             summary=f"{c.name}: {result['detail']}",
             evidence_ids=result.get("evidence_ids", []),
