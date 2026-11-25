@@ -1,0 +1,46 @@
+# 受测系统显式画像（实体对齐的权威映射来源，方案 §4.3：优先明确映射）
+system_id: online-boutique
+namespace: online-boutique
+source_root: src
+
+# 关键业务路径服务（契约 applicability: critical_service）
+critical_services:
+  - frontend
+  - checkoutservice
+  - cartservice
+  - paymentservice
+  - productcatalogservice
+  - currencyservice
+  - shippingservice
+
+# 有状态服务（不适用 stateless_expected）
+stateful_services:
+  - redis-cart
+
+# 基础设施/非业务服务（不参与业务契约评估）
+infra_services:
+  - loadgenerator
+
+# 业务写操作（来自人工代码审查的显式标注，作为 CONS 契约适用依据）
+write_operations:
+  cartservice:
+    - {op: cart_add, store: redis-cart, idempotent: unknown}
+  checkoutservice:
+    - {op: place_order, store: email+payment+cart-clear, idempotent: unknown}
+  paymentservice:
+    - {op: charge_card, store: external-payment, idempotent: false}
+
+# 源码目录 -> K8s Deployment -> OTel service.name 显式映射
+service_mapping:
+  adservice: {deployment: adservice, otel_name: adservice, source_dir: src/adservice}
+  cartservice: {deployment: cartservice, otel_name: cartservice, source_dir: src/cartservice}
+  checkoutservice: {deployment: checkoutservice, otel_name: checkoutservice, source_dir: src/checkoutservice}
+  currencyservice: {deployment: currencyservice, otel_name: currencyservice, source_dir: src/currencyservice}
+  emailservice: {deployment: emailservice, otel_name: emailservice, source_dir: src/emailservice}
+  frontend: {deployment: frontend, otel_name: frontend, source_dir: src/frontend}
+  loadgenerator: {deployment: loadgenerator, otel_name: loadgenerator, source_dir: src/loadgenerator}
+  paymentservice: {deployment: paymentservice, otel_name: paymentservice, source_dir: src/paymentservice}
+  productcatalogservice: {deployment: productcatalogservice, otel_name: productcatalogservice, source_dir: src/productcatalogservice}
+  recommendationservice: {deployment: recommendationservice, otel_name: recommendationservice, source_dir: src/recommendationservice}
+  shippingservice: {deployment: shippingservice, otel_name: shippingservice, source_dir: src/shippingservice}
+  redis-cart: {deployment: redis-cart, otel_name: redis-cart, source_dir: null}

@@ -1,0 +1,86 @@
+# Deployability 维度契约（4 条）
+id: DEP-001
+name: Rolling Update Safety
+dimension: deployability
+severity: high
+applicability:
+  requires: [deployed_service]
+static_evidence: [probe_configuration, update_strategy, replica_count]
+static_check: rolling_update_safe
+hypothesis:
+  statement: >
+    Rolling updates without readiness gates may route traffic to
+    not-ready pods and violate availability.
+  missing_evidence: [availability_during_rollout]
+verification:
+  actions: [CONTROLLED_REDEPLOYMENT, OBSERVATION_ONLY]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: DEP-002
+name: Graceful Termination
+dimension: deployability
+severity: medium
+applicability:
+  requires: [deployed_service]
+static_evidence: [termination_configuration, signal_handling]
+static_check: graceful_termination
+hypothesis:
+  statement: >
+    Without SIGTERM handling / preStop drain, in-flight requests are
+    dropped during pod termination.
+  missing_evidence: [request_loss_during_termination]
+verification:
+  actions: [POD_TERMINATION]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: DEP-003
+name: Configuration Decoupling
+dimension: deployability
+severity: low
+applicability:
+  requires: [deployed_service]
+static_evidence: [config_source, hardcoded_config_evidence]
+static_check: config_externalized
+hypothesis:
+  statement: >
+    Hardcoded endpoints/configuration require rebuilds for environment
+    changes and cause deployment drift.
+  missing_evidence: []
+verification:
+  actions: [OBSERVATION_ONLY]
+  workload: none
+oracle:
+  type: static_only
+  metrics: {}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: DEP-004
+name: Desired Observed Consistency
+dimension: deployability
+severity: medium
+applicability:
+  requires: [deployed_service]
+static_evidence: [desired_config, observed_config]
+static_check: desired_observed_consistency
+hypothesis:
+  statement: >
+    Drift between Git manifests and live cluster state means the
+    assessed configuration is not the deployed one.
+  missing_evidence: []
+verification:
+  actions: [OBSERVATION_ONLY]
+  workload: none
+oracle:
+  type: static_only
+  metrics: {}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]

@@ -1,0 +1,21 @@
+# 架构维度补充契约（图算法直接判定）
+id: ARCH-001
+name: No Dependency Cycles
+dimension: resilience
+severity: high
+applicability:
+  requires: [deployed_service]
+static_evidence: [service_dependency]
+static_check: no_dependency_cycles
+hypothesis:
+  statement: >
+    Cyclic service dependencies violate the predefined layered architecture and
+    create deadlock / cascading-failure paths.
+  missing_evidence: []
+verification:
+  actions: [OBSERVATION_ONLY]
+  workload: none
+oracle:
+  type: static_only
+  metrics: {}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]

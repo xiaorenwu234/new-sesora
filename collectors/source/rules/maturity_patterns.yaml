@@ -1,0 +1,203 @@
+rules:
+  # ---------- 超时配置 ----------
+  - id: cnaa-go-grpc-timeout
+    languages: [go]
+    severity: INFO
+    message: "gRPC call timeout configured"
+    patterns:
+      - pattern-either:
+          - pattern: context.WithTimeout(...)
+          - pattern: grpc.WithTimeout(...)
+    metadata: {cnaa_kind: timeout_configuration, cnaa_value: present}
+
+  - id: cnaa-py-requests-timeout
+    languages: [python]
+    severity: INFO
+    message: "HTTP client timeout configured"
+    patterns:
+      - pattern-either:
+          - pattern: requests.$M(..., timeout=$T, ...)
+          - pattern: $X.get(..., timeout=$T, ...)
+          - pattern: $X.post(..., timeout=$T, ...)
+    metadata: {cnaa_kind: timeout_configuration, cnaa_value: present}
+
+  - id: cnaa-py-grpc-timeout
+    languages: [python]
+    severity: INFO
+    message: "gRPC call with timeout"
+    pattern: $STUB.$METHOD(..., timeout=$T, ...)
+    metadata: {cnaa_kind: timeout_configuration, cnaa_value: present}
+
+  - id: cnaa-js-axios-timeout
+    languages: [javascript, typescript]
+    severity: INFO
+    message: "HTTP client timeout configured"
+    patterns:
+      - pattern-either:
+          - pattern: axios.$M(..., {timeout: $T}, ...)
+          - pattern: "{..., timeout: $T, ...}"
+    metadata: {cnaa_kind: timeout_configuration, cnaa_value: present}
+
+  - id: cnaa-java-timeout
+    languages: [java]
+    severity: INFO
+    message: "Timeout configured"
+    patterns:
+      - pattern-either:
+          - pattern: $X.setConnectTimeout(...)
+          - pattern: $X.setReadTimeout(...)
+          - pattern: $X.withDeadlineAfter(...)
+          - pattern: $X.connectTimeout(...)
+    metadata: {cnaa_kind: timeout_configuration, cnaa_value: present}
+
+  - id: cnaa-csharp-timeout
+    languages: [csharp]
+    severity: INFO
+    message: "Timeout configured"
+    patterns:
+      - pattern-either:
+          - pattern: $X.Timeout = $T;
+          - pattern: new CancellationTokenSource($T)
+    metadata: {cnaa_kind: timeout_configuration, cnaa_value: present}
+
+  # ---------- 重试策略 ----------
+  - id: cnaa-py-retry
+    languages: [python]
+    severity: INFO
+    message: "Retry pattern"
+    patterns:
+      - pattern-either:
+          - pattern: "@retry(...)"
+          - pattern: "@tenacity.retry(...)"
+          - pattern: for $I in range($N): ...
+    metadata: {cnaa_kind: retry_policy, cnaa_value: present}
+
+  - id: cnaa-go-retry
+    languages: [go]
+    severity: INFO
+    message: "Retry pattern"
+    patterns:
+      - pattern-either:
+          - pattern: |
+              for $I := 0; $I < $N; $I++ { ... }
+          - pattern: retry.$F(...)
+          - pattern: backoff.$F(...)
+    metadata: {cnaa_kind: retry_policy, cnaa_value: present}
+
+  - id: cnaa-js-retry
+    languages: [javascript, typescript]
+    severity: INFO
+    message: "Retry pattern"
+    patterns:
+      - pattern-either:
+          - pattern: $X.retry(...)
+          - pattern: pRetry(...)
+          - pattern: for ($I = 0; $I < $N; $I++) { ... }
+    metadata: {cnaa_kind: retry_policy, cnaa_value: present}
+
+  - id: cnaa-java-retry
+    languages: [java]
+    severity: INFO
+    message: "Retry pattern"
+    patterns:
+      - pattern-either:
+          - pattern: "@Retryable(...)"
+          - pattern: RetryTemplate(...)
+          - pattern: |
+              for (int $I = 0; $I < $N; $I++) { ... }
+    metadata: {cnaa_kind: retry_policy, cnaa_value: present}
+
+  - id: cnaa-csharp-polly-retry
+    languages: [csharp]
+    severity: INFO
+    message: "Polly retry policy"
+    patterns:
+      - pattern-either:
+          - pattern: Policy.Handle<...>(...).Retry(...)
+          - pattern: $X.WaitAndRetry(...)
+          - pattern: $X.Retry(...)
+    metadata: {cnaa_kind: retry_policy, cnaa_value: present}
+
+  # ---------- 异常处理 ----------
+  - id: cnaa-py-except
+    languages: [python]
+    severity: INFO
+    message: "Exception handler"
+    pattern: |
+      try:
+        ...
+      except $E:
+        ...
+    metadata: {cnaa_kind: exception_handling, cnaa_value: present}
+
+  - id: cnaa-go-error-check
+    languages: [go]
+    severity: INFO
+    message: "Error check after call"
+    pattern: |
+      if err != nil { ... }
+    metadata: {cnaa_kind: exception_handling, cnaa_value: present}
+
+  - id: cnaa-js-catch
+    languages: [javascript, typescript]
+    severity: INFO
+    message: "Exception handler"
+    patterns:
+      - pattern-either:
+          - pattern: try { ... } catch ($E) { ... }
+          - pattern: $P.catch(...)
+    metadata: {cnaa_kind: exception_handling, cnaa_value: present}
+
+  - id: cnaa-java-catch
+    languages: [java]
+    severity: INFO
+    message: "Exception handler"
+    pattern: try { ... } catch ($E $X) { ... }
+    metadata: {cnaa_kind: exception_handling, cnaa_value: present}
+
+  - id: cnaa-csharp-catch
+    languages: [csharp]
+    severity: INFO
+    message: "Exception handler"
+    pattern: try { ... } catch (...) { ... }
+    metadata: {cnaa_kind: exception_handling, cnaa_value: present}
+
+  # ---------- Trace 插桩 ----------
+  - id: cnaa-otel-instrumentation
+    languages: [python, go, java, javascript, typescript, csharp]
+    severity: INFO
+    message: "OpenTelemetry / tracing instrumentation"
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(opentelemetry|OpenTelemetry|otelgrpc|otelhttp|TracerProvider|ENABLE_TRACING|initTracing|setupTracing|ActivitySource)"
+    metadata: {cnaa_kind: trace_instrumentation, cnaa_value: present}
+
+  # ---------- 幂等性证据 ----------
+  - id: cnaa-idempotency
+    languages: [python, go, java, javascript, typescript, csharp]
+    severity: INFO
+    message: "Idempotency / dedup evidence"
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(?i)(idempoten|dedup|transaction_id|transactionId|request_id.*unique|SETNX|setnx)"
+    metadata: {cnaa_kind: idempotency_evidence, cnaa_value: present}
+
+  # ---------- 错误日志 ----------
+  - id: cnaa-error-logging
+    languages: [python, go, java, javascript, typescript, csharp]
+    severity: INFO
+    message: "Error logging"
+    patterns:
+      - pattern-either:
+          - pattern-regex: "(log\\.(Error|Errorf|Errorln|error|exception|warn)|logger\\.(error|exception|Error)|console\\.error|LOG\\.(error|Error)|_logger\\.(error|exception)|logging\\.(error|exception))"
+    metadata: {cnaa_kind: error_logging, cnaa_value: present}
+
+  # ---------- 硬编码地址（配置解耦反例） ----------
+  - id: cnaa-hardcoded-endpoint
+    languages: [python, go, java, javascript, typescript, csharp]
+    severity: INFO
+    message: "Hardcoded network endpoint"
+    patterns:
+      - pattern-either:
+          - pattern-regex: "\"(https?://|[a-z0-9-]+:[0-9]{2,5})[^\"]*\""
+    metadata: {cnaa_kind: hardcoded_config_evidence, cnaa_value: present}

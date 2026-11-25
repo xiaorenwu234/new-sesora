@@ -1,0 +1,46 @@
+# Astronomy Shop 冻结 SLO（RQ5 跨系统评估，实验前确定）
+global:
+  restart_max: 0
+  recovery_time_s_max: 60
+  amplification_max: 3.0
+  invariant_violations_max: 0
+  broken_trace_ratio_max: 0.05
+  error_signal_required: true
+  metric_series_required: true
+  localization_accuracy_min: 0.8
+  scaling_gain_min: 1.5
+
+services:
+  frontend:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 2000
+  checkout:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 3000
+  cart:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 1000
+  currency:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 1000
+  payment:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 2000
+  product-catalog:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 1000
+  shipping:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 2000
+  email:
+    error_rate_max: 0.02
+    p99_latency_ms_max: 3000
+  recommendation:
+    error_rate_max: 0.02
+    p99_latency_ms_max: 2000
+  ad:
+    error_rate_max: 0.02
+    p99_latency_ms_max: 2000
+  quote:
+    error_rate_max: 0.02
+    p99_latency_ms_max: 1000

@@ -1,0 +1,73 @@
+# 独立静态基线 Semgrep 规则（§9.3：不与成熟度契约共享判定逻辑）。
+# 通用代码级坏味道，规则 ID 前缀 baseline-，由 runner 映射到契约 ID。
+rules:
+  - id: baseline-py-requests-no-timeout
+    languages: [python]
+    severity: ERROR
+    message: "requests call without explicit timeout (unbounded inter-service call)"
+    patterns:
+      - pattern: requests.$METHOD(...)
+      - pattern-not: requests.$METHOD(..., timeout=..., ...)
+    metadata:
+      contract: RES-001
+
+  - id: baseline-py-urlopen-no-timeout
+    languages: [python]
+    severity: ERROR
+    message: "urllib urlopen without timeout"
+    patterns:
+      - pattern: urllib.request.urlopen(...)
+      - pattern-not: urllib.request.urlopen(..., timeout=..., ...)
+    metadata:
+      contract: RES-001
+
+  - id: baseline-go-http-default-client
+    languages: [go]
+    severity: ERROR
+    message: "http.Get/Post/Head use DefaultClient without timeout"
+    pattern-either:
+      - pattern: http.Get(...)
+      - pattern: http.Post(...)
+      - pattern: http.Head(...)
+    metadata:
+      contract: RES-001
+
+  - id: baseline-py-bare-except-pass
+    languages: [python]
+    severity: WARNING
+    message: "exception swallowed without recovery (bare except + pass)"
+    patterns:
+      - pattern: |
+          except $E:
+            pass
+    metadata:
+      contract: RES-002
+
+  - id: baseline-js-axios-no-timeout
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "axios call without timeout option"
+    patterns:
+      - pattern: axios.$METHOD(...)
+      - pattern-not: "axios.$METHOD(..., {timeout: ...}, ...)"
+      - pattern-not: "axios.$METHOD(..., {..., timeout: ..., ...}, ...)"
+    metadata:
+      contract: RES-001
+
+  - id: baseline-py-unbounded-retry-loop
+    languages: [python]
+    severity: WARNING
+    message: "while True retry loop without visible attempt bound"
+    patterns:
+      - pattern: |
+          while True:
+            ...
+            $CALL(...)
+            ...
+      - pattern-not: |
+          while True:
+            ...
+            break
+            ...
+    metadata:
+      contract: RES-003

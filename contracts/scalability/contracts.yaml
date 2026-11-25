@@ -1,0 +1,89 @@
+# Scalability 维度契约（4 条）
+id: SCA-001
+name: Horizontal Scaling Capability
+dimension: scalability
+severity: medium
+applicability:
+  requires: [deployed_service, stateless_expected]
+static_evidence: [replica_count, hpa_configuration]
+static_check: scaling_config_present
+hypothesis:
+  statement: >
+    A stateless service pinned to a single replica without autoscaling
+    cannot absorb load growth.
+  missing_evidence: [throughput_under_load_increase]
+verification:
+  actions: [LOAD_VARIATION, OBSERVATION_ONLY]
+  workload: ramp_up_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+    p99_latency: {slo_key: "services.{target}.p99_latency_ms_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: SCA-002
+name: Resource Requests And Limits
+dimension: scalability
+severity: medium
+applicability:
+  requires: [deployed_service]
+static_evidence: [resource_configuration]
+static_check: resource_limits_required
+hypothesis:
+  statement: >
+    Missing resource requests/limits breaks scheduler guarantees and
+    may cause noisy-neighbour degradation under load.
+  missing_evidence: [resource_usage_under_load]
+verification:
+  actions: [LOAD_VARIATION, CPU_PRESSURE, OBSERVATION_ONLY]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: SCA-003
+name: State Isolation For Scaling
+dimension: scalability
+severity: high
+applicability:
+  requires: [deployed_service, stateless_expected]
+static_evidence: [volume_configuration, session_state_evidence]
+static_check: no_local_state
+hypothesis:
+  statement: >
+    Local/in-process state in a horizontally scaled service causes
+    inconsistent behaviour across replicas.
+  missing_evidence: [cross_replica_consistency_under_load]
+verification:
+  actions: [LOAD_VARIATION, POD_TERMINATION]
+  workload: predefined_business_scenario
+oracle:
+  type: business_invariant
+  metrics:
+    invariant_violations: {slo_key: "global.invariant_violations_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: SCA-004
+name: Scaling Effectiveness
+dimension: scalability
+severity: medium
+dynamic_only: true
+applicability:
+  requires: [deployed_service, stateless_expected]
+static_evidence: [replica_count, hpa_configuration]
+hypothesis:
+  statement: >
+    Adding replicas may fail to improve throughput due to a shared
+    downstream bottleneck.
+  missing_evidence: [throughput_before_after_scale_out]
+verification:
+  actions: [LOAD_VARIATION, OBSERVATION_ONLY]
+  workload: ramp_up_business_scenario
+oracle:
+  type: scaling_target
+  metrics:
+    throughput_gain_ratio: {slo_key: "global.scaling_gain_min"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]

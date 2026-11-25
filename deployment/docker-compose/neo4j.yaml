@@ -1,0 +1,22 @@
+# Neo4j 证据图谱存储（可选；不可用时 EvidenceGraph 自动降级为内存态）。
+# podman: podman-compose -f neo4j.yaml up -d
+# docker: docker compose -f neo4j.yaml up -d
+# 与 config.yaml neo4j 段一致：bolt://127.0.0.1:7687, neo4j/cnaa-research-2026
+services:
+  neo4j:
+    image: docker.io/library/neo4j:5.26-community
+    container_name: cnaa-neo4j
+    ports:
+      - "7474:7474"   # HTTP browser
+      - "7687:7687"   # Bolt
+    environment:
+      NEO4J_AUTH: neo4j/cnaa-research-2026
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache__size: 512m
+    volumes:
+      - cnaa-neo4j-data:/data
+    restart: unless-stopped
+
+volumes:
+  cnaa-neo4j-data:

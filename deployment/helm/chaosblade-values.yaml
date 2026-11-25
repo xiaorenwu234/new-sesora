@@ -1,0 +1,9 @@
+# ChaosBlade Operator 研究用途精简配置。
+# 限制：单实验并发、CR 状态上报（供 wait_effective 判定）。
+blade:
+  # 实验 CR 命名前缀由适配器控制（cnaa-），此处仅保留默认工具镜像
+  toolImage: chaosbladeio/chaosblade-tool:1.7.4
+operator:
+  replicaCount: 1
+# 启用 CR 状态字段（state=Success/Error），适配器据此确认注入下发
+enableCrStatus: true

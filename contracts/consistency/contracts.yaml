@@ -1,0 +1,66 @@
+# Data Consistency 维度契约（3 条）
+id: CONS-001
+name: Write Idempotency
+dimension: consistency
+severity: high
+applicability:
+  requires: [write_operations]
+static_evidence: [business_write, idempotency_evidence]
+static_check: idempotency_evidence_present
+hypothesis:
+  statement: >
+    Write operations without idempotency keys or deduplication may
+    duplicate business records on replay.
+  missing_evidence: [duplicate_write_under_replay, business_invariant_result]
+verification:
+  actions: [NETWORK_DELAY, NETWORK_LOSS, OBSERVATION_ONLY]
+  workload: predefined_business_scenario
+oracle:
+  type: business_invariant
+  metrics:
+    invariant_violations: {slo_key: "global.invariant_violations_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: CONS-002
+name: Retry Consistency
+dimension: consistency
+severity: critical
+applicability:
+  requires: [write_operations, retry_policy_present]
+static_evidence: [retry_policy, business_write, idempotency_evidence]
+hypothesis:
+  statement: >
+    Retrying non-idempotent writes after timeout may create duplicate
+    charges/orders (retry-induced inconsistency).
+  missing_evidence: [runtime_retry_behavior, business_invariant_result]
+verification:
+  actions: [NETWORK_DELAY, NETWORK_LOSS]
+  workload: predefined_business_scenario
+oracle:
+  type: business_invariant
+  metrics:
+    invariant_violations: {slo_key: "global.invariant_violations_max"}
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: CONS-003
+name: Partial Failure Data Constraints
+dimension: consistency
+severity: high
+dynamic_only: true
+applicability:
+  requires: [critical_service, write_operations]
+static_evidence: [business_write, transaction_evidence, service_dependency]
+hypothesis:
+  statement: >
+    A multi-step business flow interrupted mid-way may leave data
+    violating cross-service invariants (e.g. order without payment).
+  missing_evidence: [invariant_state_after_partial_failure]
+verification:
+  actions: [DEPENDENCY_UNAVAILABLE, POD_TERMINATION, NETWORK_LOSS]
+  workload: predefined_business_scenario
+oracle:
+  type: business_invariant
+  metrics:
+    invariant_violations: {slo_key: "global.invariant_violations_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]

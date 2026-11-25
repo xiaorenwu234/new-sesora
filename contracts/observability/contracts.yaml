@@ -1,0 +1,88 @@
+# Observability 维度契约（4 条）
+id: OBS-001
+name: Trace Instrumentation And Propagation
+dimension: observability
+severity: high
+applicability:
+  requires: [deployed_service]
+static_evidence: [trace_instrumentation, trace_context_propagation]
+static_check: trace_instrumentation_present
+hypothesis:
+  statement: >
+    Missing instrumentation or broken context propagation makes
+    cross-service failures untraceable.
+  missing_evidence: [end_to_end_trace_continuity]
+verification:
+  actions: [OBSERVATION_ONLY, NETWORK_DELAY, TRACE_DRILLDOWN]
+  workload: predefined_business_scenario
+oracle:
+  type: trace_continuity
+  metrics:
+    broken_trace_ratio: {slo_key: "global.broken_trace_ratio_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: OBS-002
+name: Error Observability
+dimension: observability
+severity: medium
+applicability:
+  requires: [deployed_service]
+static_evidence: [error_logging, exception_handling]
+static_check: error_logging_present
+hypothesis:
+  statement: >
+    Swallowed exceptions without logging/metrics make failures invisible
+    to operators.
+  missing_evidence: [error_signal_during_fault]
+verification:
+  actions: [DEPENDENCY_UNAVAILABLE, OBSERVATION_ONLY, LOG_DEEP_DIVE]
+  workload: predefined_business_scenario
+oracle:
+  type: error_signal_presence
+  metrics:
+    error_signal_detected: {slo_key: "global.error_signal_required"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: OBS-003
+name: Metrics Coverage
+dimension: observability
+severity: medium
+applicability:
+  requires: [deployed_service]
+static_evidence: [metrics_endpoint, scrape_configuration]
+static_check: metrics_coverage
+hypothesis:
+  statement: >
+    Services without RED metrics prevent SLO-based assessment and
+    alerting.
+  missing_evidence: [runtime_metric_availability]
+verification:
+  actions: [OBSERVATION_ONLY, METRIC_DRILLDOWN]
+  workload: none
+oracle:
+  type: metric_presence
+  metrics:
+    metric_series_present: {slo_key: "global.metric_series_required"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: OBS-004
+name: Failure Localization
+dimension: observability
+severity: high
+dynamic_only: true
+applicability:
+  requires: [critical_service, downstream_dependency]
+static_evidence: [trace_instrumentation, service_dependency]
+hypothesis:
+  statement: >
+    During a dependency failure, traces may not localize the failing
+    hop, blocking diagnosis.
+  missing_evidence: [error_span_attribution_during_fault]
+verification:
+  actions: [NETWORK_DELAY, DEPENDENCY_UNAVAILABLE]
+  workload: predefined_business_scenario
+oracle:
+  type: fault_localization
+  metrics:
+    localization_accuracy: {slo_key: "global.localization_accuracy_min"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]

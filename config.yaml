@@ -1,0 +1,90 @@
+# 评估系统全局配置（所有路径可按环境修改）
+system_id: online-boutique
+
+source:
+  repo_path: /home/xueht/new-sesora/example/microservices-demo
+  commit: null            # null = 自动读取 git HEAD（非 git 仓库时记为 unknown）
+  languages: [python, go, java, javascript, csharp]
+
+kubernetes:
+  kubeconfig: /home/xueht/new-sesora/kubeconfig
+  namespace: online-boutique
+  manifest_dir: /home/xueht/new-sesora/example/microservices-demo/kubernetes-manifests
+
+runtime:
+  jaeger_url: http://192.168.5.51:31686/jaeger/ui   # Jaeger Query NodePort（jaeger 2.x UI base path）
+  prometheus_url: http://192.168.5.51:31090 # Prometheus NodePort
+  lookback: 1h
+  trace_limit: 200
+
+neo4j:
+  uri: bolt://127.0.0.1:7687
+  user: neo4j
+  password: cnaa-research-2026
+  database: neo4j
+
+llm:
+  # OpenAI 兼容接口；不配置 key 时 Agent 自动退化为确定性启发式模式
+  # 本地 vLLM（启用推理需 --reasoning-parser qwen3 分离思考与最终答案）：
+  #   vllm serve ~/models/Qwen38-27B --served-model-name qwen3.8-27b --port 8000 \
+  #     --max-model-len 8192 --enforce-eager --reasoning-parser qwen3
+  # 启用：export CNAA_LLM_API_KEY=local（vLLM 默认不校验 key）
+  base_url: http://127.0.0.1:8000/v1
+  api_key_env: CNAA_LLM_API_KEY
+  model: qwen3.8-27b
+  temperature: 0.1
+  enable_thinking: true
+
+workload:
+  frontend_url: http://192.168.5.51:31216
+  locust_file: benchmarks/workloads/boutique_workload.py
+  users: 20
+  spawn_rate: 5
+  duration_s: 120
+
+budget:
+  max_experiments: 8
+  max_wall_time_s: 14400    # 临时：真实推理 LLM 逐假设 review 耗时远超 3600s，实测后恢复
+  max_tokens: 1000000       # 临时：同上，原值 200000
+  lambda_cost: 0.15       # 效用函数成本权重
+  mu_risk: 0.30           # 效用函数风险权重
+
+agent:
+  # Agent 自主决策：提假设/提候选/followup 闭环 + EGV 安全集内终裁。
+  # enabled=false 或 LLM 不可用时全链路回退纯 EGV top-1（离线可复现）。
+  enabled: true
+  safe_set_k: 3                 # EGV 正效用安全集大小（Agent 终裁范围）
+  max_new_hypotheses: 5         # 每轮自主提出新假设上限
+  max_proposals_per_round: 4    # 每轮候选实验提议上限
+
+exploration:
+  # 只读数据深挖会话围栏（LOG_DEEP_DIVE/TRACE_DRILLDOWN/METRIC_DRILLDOWN/
+  # CONFIG_AUDIT/SOURCE_INSPECTION 动作内部的有界多步自主探索）
+  max_steps: 6                  # 单次深挖会话最大工具调用步数
+  max_tokens_per_session: 20000 # 单会话 LLM token 上限
+  result_truncate_chars: 2000   # 工具结果喂给 LLM 的截断长度
+
+safety:
+  allowed_namespaces: [online-boutique]
+  allowed_actions:
+    - POD_TERMINATION
+    - NETWORK_DELAY
+    - NETWORK_LOSS
+    - CPU_PRESSURE
+    - MEMORY_PRESSURE
+    - DEPENDENCY_UNAVAILABLE
+    - LOAD_VARIATION
+    - OBSERVATION_ONLY
+    - LOG_DEEP_DIVE
+    - TRACE_DRILLDOWN
+    - METRIC_DRILLDOWN
+    - CONFIG_AUDIT
+    - SOURCE_INSPECTION
+  max_fault_duration_s: 180
+  max_affected_pods: 1
+  protected_services: [redis-cart, loadgenerator]
+  require_baseline: true
+  require_recovery_check: true
+
+slo_file: benchmarks/slo/boutique_slo.yaml
+output_dir: runs

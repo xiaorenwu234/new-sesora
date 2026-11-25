@@ -1,0 +1,55 @@
+# Astronomy Shop（OpenTelemetry Demo）系统画像 —— RQ5 跨系统评估。
+# 与 online_boutique.yaml 同构；deployment/otel_name 采用 opentelemetry-demo
+# Helm chart 的实际命名（连字符风格）。
+system_id: astronomy-shop
+namespace: otel-demo
+source_root: src
+
+critical_services:
+  - frontend
+  - checkout
+  - cart
+  - payment
+  - product-catalog
+  - currency
+  - shipping
+
+stateful_services:
+  - astronomy-db
+  - valkey-cart
+  - kafka
+  - opensearch
+
+infra_services:
+  - flagd
+  - image-provider
+  - load-generator
+  - jaeger
+  - otel-collector
+
+# 业务写操作（人工代码审查标注）
+write_operations:
+  cart:
+    - {op: add_item, store: valkey-cart, idempotent: unknown}
+  checkout:
+    - {op: place_order, store: kafka+payment+cart-clear, idempotent: unknown}
+  payment:
+    - {op: charge, store: external-payment, idempotent: false}
+
+# 源码目录 -> K8s Deployment -> OTel service.name 显式映射
+service_mapping:
+  ad: {deployment: ad, otel_name: ad, source_dir: src/ad}
+  cart: {deployment: cart, otel_name: cart, source_dir: src/cart}
+  checkout: {deployment: checkout, otel_name: checkout, source_dir: src/checkout}
+  currency: {deployment: currency, otel_name: currency, source_dir: src/currency}
+  email: {deployment: email, otel_name: email, source_dir: src/email}
+  frontend: {deployment: frontend, otel_name: frontend, source_dir: src/frontend}
+  payment: {deployment: payment, otel_name: payment, source_dir: src/payment}
+  product-catalog: {deployment: product-catalog, otel_name: product-catalog, source_dir: src/product-catalog}
+  quote: {deployment: quote, otel_name: quote, source_dir: src/quote}
+  recommendation: {deployment: recommendation, otel_name: recommendation, source_dir: src/recommendation}
+  shipping: {deployment: shipping, otel_name: shipping, source_dir: src/shipping}
+  flagd: {deployment: flagd, otel_name: flagd, source_dir: null}
+  image-provider: {deployment: image-provider, otel_name: image-provider, source_dir: src/image-provider}
+  load-generator: {deployment: load-generator, otel_name: load-generator, source_dir: src/load-generator}
+  astronomy-db: {deployment: astronomy-db, otel_name: astronomy-db, source_dir: null}

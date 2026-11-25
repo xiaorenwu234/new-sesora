@@ -1,0 +1,47 @@
+# 冻结的业务 SLO / 判定阈值（评估开始前确定，实验后禁止修改）
+# 依据：Online Boutique 演示系统研究用途基线，负载 = 20 并发用户业务场景
+global:
+  restart_max: 0                    # 实验窗口内允许的新增重启次数
+  recovery_time_s_max: 60           # Pod 故障后可用性恢复时限
+  amplification_max: 3.0            # 下游请求放大倍数上限
+  invariant_violations_max: 0       # 业务不变量违例数上限
+  broken_trace_ratio_max: 0.05      # 断链 Trace 比例上限
+  error_signal_required: true       # 故障期间必须能观测到错误信号
+  metric_series_required: true      # 服务必须具备 RED 指标序列
+  localization_accuracy_min: 0.8    # 错误 Span 归因到故障服务的比例下限
+  scaling_gain_min: 1.5             # 副本翻倍后的吞吐增益下限
+
+services:
+  frontend:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 2000
+  checkoutservice:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 3000
+  cartservice:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 1000
+  currencyservice:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 1000
+  paymentservice:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 2000
+  productcatalogservice:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 1000
+  recommendationservice:
+    error_rate_max: 0.05            # 非关键依赖，允许降级
+    p99_latency_ms_max: 2000
+  shippingservice:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 1500
+  adservice:
+    error_rate_max: 0.05            # 非关键依赖
+    p99_latency_ms_max: 2000
+  emailservice:
+    error_rate_max: 0.05
+    p99_latency_ms_max: 3000
+  redis-cart:
+    error_rate_max: 0.01
+    p99_latency_ms_max: 500

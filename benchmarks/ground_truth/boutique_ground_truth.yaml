@@ -1,0 +1,53 @@
+# Online Boutique Ground Truth（独立于评估实现维护，方案 §9.1）。
+# 每条必须给出独立验证来源；未经专家评审的条目标记 pending_review，
+# 指标计算时自动排除（evaluation/metrics/detection_metrics.py）。
+# 冻结版本: v1 (2026-11-23)
+
+# --- 已独立验证的缺陷 ---
+- {contract_id: SCA-001, target: frontend, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且命名空间无任何 HPA（kubectl get hpa 为空）",
+   verification: "kubectl get deploy/hpa -n online-boutique, 2026-11-23"}
+- {contract_id: SCA-001, target: checkoutservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: cartservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: currencyservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: productcatalogservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: paymentservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: shippingservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: emailservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: recommendationservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: SCA-001, target: adservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "单副本且无 HPA", verification: "kubectl, 2026-11-23"}
+- {contract_id: DEP-004, target: redis-cart, expected_state: VIOLATED, status: confirmed,
+   rationale: "Git manifest 无 resources 定义，集群实际有 limits(cpu=125m,mem=256Mi)，配置漂移",
+   verification: "kubectl get deploy redis-cart -o jsonpath vs kubernetes-manifests/cartservice.yaml, 2026-11-23"}
+- {contract_id: RES-001, target: frontend, expected_state: VIOLATED, status: confirmed,
+   rationale: "下游 productcatalogservice 注入 3s 网络延迟后 frontend 错误率 0->0.72，Locust p99 21s，无有效超时隔离",
+   verification: "ChaosBlade 受控实验 dynamic-e2e-02 (X-ae763b49ca), 2026-11-23"}
+- {contract_id: RES-005, target: frontend, expected_state: VIOLATED, status: confirmed,
+   rationale: "recommendationservice 60% 丢包后 frontend p99 672ms->58s、错误率 1.15%>1% SLO，无舱壁/降级隔离",
+   verification: "ChaosBlade 受控实验 full-e2e-06 (X-e6c1d60fbe), 2026-11-23"}
+- {contract_id: RES-005, target: checkoutservice, expected_state: VIOLATED, status: confirmed,
+   rationale: "emailservice 60% 丢包后 checkout p99 4.8s>3s SLO、错误率 1.18%>1%，关键路径无故障隔离",
+   verification: "ChaosBlade 受控实验 full-e2e-06 (X-642b305381), 2026-11-23"}
+
+# --- 已独立验证的合规项 ---
+- {contract_id: RES-004, target: frontend, expected_state: COMPLIANT, status: confirmed,
+   rationale: "readiness/liveness 探针均已配置", verification: "kubectl get deploy frontend, 2026-11-23"}
+- {contract_id: RES-004, target: checkoutservice, expected_state: COMPLIANT, status: confirmed,
+   rationale: "readiness/liveness 探针均已配置", verification: "kubectl, 2026-11-23"}
+- {contract_id: ARCH-001, target: frontend, expected_state: COMPLIANT, status: confirmed,
+   rationale: "服务依赖为分层 DAG，frontend 不在任何环中",
+   verification: "部署 env 依赖关系人工核对 + NetworkX SCC, 2026-11-23"}
+
+# --- 待动态验证/专家评审（不参与指标计算） ---
+- {contract_id: CONS-001, target: paymentservice, expected_state: VIOLATED, status: pending_review,
+   rationale: "Charge 接口无幂等键，重试可能重复扣款（需 business_invariant Oracle 动态证实）",
+   verification: "待实验"}

@@ -1,0 +1,115 @@
+# Resilience 维度契约（5 条）
+id: RES-001
+name: Inter-Service Call Timeout
+dimension: resilience
+severity: high
+applicability:
+  requires: [downstream_dependency]
+static_evidence: [service_dependency, timeout_configuration]
+static_check: timeout_on_client_calls
+hypothesis:
+  statement: >
+    Calls to downstream dependencies without bounded timeouts may hang
+    and exhaust upstream resources when the dependency degrades.
+  missing_evidence: [runtime_timeout_behavior, upstream_slo_under_delay]
+verification:
+  actions: [NETWORK_DELAY, DEPENDENCY_UNAVAILABLE, OBSERVATION_ONLY]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+    p99_latency: {slo_key: "services.{target}.p99_latency_ms_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: RES-002
+name: Dependency Exception Recovery
+dimension: resilience
+severity: high
+applicability:
+  requires: [downstream_dependency]
+static_evidence: [exception_handling, service_dependency]
+static_check: exception_handling_on_calls
+hypothesis:
+  statement: >
+    Unhandled dependency exceptions may crash request handling or the
+    process instead of degrading gracefully.
+  missing_evidence: [runtime_error_propagation, pod_restart_under_fault]
+verification:
+  actions: [DEPENDENCY_UNAVAILABLE, NETWORK_LOSS, POD_TERMINATION]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+    restart_count: {slo_key: "global.restart_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: RES-003
+name: Bounded Retry Policy
+dimension: resilience
+severity: medium
+applicability:
+  requires: [downstream_dependency]
+static_evidence: [retry_policy, timeout_configuration]
+static_check: retry_bounded
+hypothesis:
+  statement: >
+    Unbounded or backoff-less retries may amplify load on a failing
+    dependency (retry storm) and worsen the outage.
+  missing_evidence: [runtime_retry_behavior, downstream_load_amplification]
+verification:
+  actions: [NETWORK_DELAY, NETWORK_LOSS, OBSERVATION_ONLY]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+    request_amplification: {slo_key: "global.amplification_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: RES-004
+name: Pod Failure Recovery
+dimension: resilience
+severity: high
+applicability:
+  requires: [deployed_service]
+static_evidence: [probe_configuration, replica_count]
+static_check: probes_and_replicas
+check_params: {min_replicas: 1}
+hypothesis:
+  statement: >
+    A service without proper health probes or redundancy may fail to
+    recover availability after pod loss.
+  missing_evidence: [availability_during_pod_loss, recovery_time]
+verification:
+  actions: [POD_TERMINATION]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+    recovery_time_s: {slo_key: "global.recovery_time_s_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]
+---
+id: RES-005
+name: Dependency Failure Isolation
+dimension: resilience
+severity: critical
+applicability:
+  requires: [critical_service, downstream_dependency]
+static_evidence: [service_dependency, timeout_configuration, retry_policy, resource_isolation]
+hypothesis:
+  statement: >
+    Failure of a downstream dependency may violate the upstream
+    critical service SLO (no bulkhead / fallback isolation).
+  missing_evidence: [upstream_slo_under_dependency_fault, fallback_behavior]
+verification:
+  actions: [NETWORK_DELAY, NETWORK_LOSS, DEPENDENCY_UNAVAILABLE]
+  workload: predefined_business_scenario
+oracle:
+  type: slo_violation
+  metrics:
+    error_rate: {slo_key: "services.{target}.error_rate_max"}
+    p99_latency: {slo_key: "services.{target}.p99_latency_ms_max"}
+states: [COMPLIANT, VIOLATED, RISK_UNCONFIRMED, INCONCLUSIVE, NOT_APPLICABLE]

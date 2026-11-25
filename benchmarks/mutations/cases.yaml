@@ -1,0 +1,285 @@
+# 受控缺陷注入案例库（方案 §8）。
+# 每案例：注入位置(file+mutation)、触发条件(trigger)、Oracle、预期状态、
+# 恢复方式（runner 通过 git checkout 还原 + 可选 kubectl apply）。
+# layer=manifest 的案例可自动 apply/revert/deploy；layer=source 需重建镜像。
+# expected_state=COMPLIANT 的为负样本（正确/加固配置），用于检验误报。
+#
+# mutation 语法：
+#   op: set/delete  path: 点分路径（支持 [n] 索引）  value: set 时的值
+
+# ---------- 缺陷案例（VIOLATED） ----------
+- id: MUT-001
+  contract_id: RES-004
+  target: emailservice
+  layer: manifest
+  file: kubernetes-manifests/emailservice.yaml
+  expected_state: VIOLATED
+  description: 移除 readinessProbe，滚动更新/故障时流量路由到未就绪 Pod
+  trigger: Pod 重启或滚动更新期间承接流量
+  oracle: {type: slo_violation, metric: error_rate}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].readinessProbe"}
+
+- id: MUT-002
+  contract_id: RES-004
+  target: emailservice
+  layer: manifest
+  file: kubernetes-manifests/emailservice.yaml
+  expected_state: VIOLATED
+  description: 移除 livenessProbe，死锁/卡死 Pod 无法被自动重启
+  trigger: 进程卡死后无自动恢复
+  oracle: {type: slo_violation, metric: recovery_time}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].livenessProbe"}
+
+- id: MUT-003
+  contract_id: RES-004
+  target: paymentservice
+  layer: manifest
+  file: kubernetes-manifests/paymentservice.yaml
+  expected_state: VIOLATED
+  description: 移除 readinessProbe
+  trigger: Pod 未就绪即承接支付请求
+  oracle: {type: slo_violation, metric: error_rate}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].readinessProbe"}
+
+- id: MUT-004
+  contract_id: RES-004
+  target: checkoutservice
+  layer: manifest
+  file: kubernetes-manifests/checkoutservice.yaml
+  expected_state: VIOLATED
+  description: 移除 livenessProbe
+  trigger: 下单服务卡死无自动恢复
+  oracle: {type: slo_violation, metric: recovery_time}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].livenessProbe"}
+
+- id: MUT-005
+  contract_id: SCA-002
+  target: emailservice
+  layer: manifest
+  file: kubernetes-manifests/emailservice.yaml
+  expected_state: VIOLATED
+  description: 移除 resources.limits，无资源上限可致节点挤压
+  trigger: 负载升高时资源无界增长
+  oracle: {type: metric_presence, metric: resource_limits}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].resources.limits"}
+
+- id: MUT-006
+  contract_id: SCA-002
+  target: paymentservice
+  layer: manifest
+  file: kubernetes-manifests/paymentservice.yaml
+  expected_state: VIOLATED
+  description: 移除 resources.requests，调度器无法保证资源预留
+  trigger: 节点资源争抢时支付服务被挤压
+  oracle: {type: metric_presence, metric: resource_requests}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].resources.requests"}
+
+- id: MUT-007
+  contract_id: SCA-002
+  target: currencyservice
+  layer: manifest
+  file: kubernetes-manifests/currencyservice.yaml
+  expected_state: VIOLATED
+  description: 移除整个 resources 段
+  trigger: 无请求无限制，BestEffort QoS
+  oracle: {type: metric_presence, metric: resource_limits}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].resources"}
+
+- id: MUT-008
+  contract_id: DEP-001
+  target: emailservice
+  layer: manifest
+  file: kubernetes-manifests/emailservice.yaml
+  expected_state: VIOLATED
+  description: 镜像改为 latest tag，滚动更新不可复现/回滚不确定
+  trigger: 重新部署时拉取不确定镜像版本
+  oracle: {type: metric_presence, metric: image_tag_pinned}
+  mutation: {op: set, path: "spec.template.spec.containers[0].image", value: "emailservice:latest"}
+
+- id: MUT-009
+  contract_id: DEP-001
+  target: adservice
+  layer: manifest
+  file: kubernetes-manifests/adservice.yaml
+  expected_state: VIOLATED
+  description: 镜像改为 latest tag
+  trigger: 部署不可复现
+  oracle: {type: metric_presence, metric: image_tag_pinned}
+  mutation: {op: set, path: "spec.template.spec.containers[0].image", value: "adservice:latest"}
+
+- id: MUT-010
+  contract_id: RES-004
+  target: shippingservice
+  layer: manifest
+  file: kubernetes-manifests/shippingservice.yaml
+  expected_state: VIOLATED
+  description: 移除 readinessProbe
+  trigger: 未就绪即承接运费计算请求
+  oracle: {type: slo_violation, metric: error_rate}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].readinessProbe"}
+
+- id: MUT-011
+  contract_id: RES-004
+  target: recommendationservice
+  layer: manifest
+  file: kubernetes-manifests/recommendationservice.yaml
+  expected_state: VIOLATED
+  description: 移除 livenessProbe
+  trigger: 推荐服务卡死无自动恢复
+  oracle: {type: slo_violation, metric: recovery_time}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].livenessProbe"}
+
+- id: MUT-012
+  contract_id: DEP-002
+  target: emailservice
+  layer: manifest
+  file: kubernetes-manifests/emailservice.yaml
+  expected_state: VIOLATED
+  description: terminationGracePeriodSeconds=0，无优雅终止窗口
+  trigger: 滚动更新时正在处理的请求被立即杀死
+  oracle: {type: slo_violation, metric: request_loss_during_termination}
+  mutation: {op: set, path: spec.template.spec.terminationGracePeriodSeconds, value: 0}
+
+- id: MUT-013
+  contract_id: SCA-002
+  target: frontend
+  layer: manifest
+  file: kubernetes-manifests/frontend.yaml
+  expected_state: VIOLATED
+  description: 移除 resources.limits
+  trigger: 入口服务资源无界
+  oracle: {type: metric_presence, metric: resource_limits}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].resources.limits"}
+
+- id: MUT-014
+  contract_id: RES-004
+  target: productcatalogservice
+  layer: manifest
+  file: kubernetes-manifests/productcatalogservice.yaml
+  expected_state: VIOLATED
+  description: 移除 readinessProbe
+  trigger: 目录服务未就绪即承接查询
+  oracle: {type: slo_violation, metric: error_rate}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].readinessProbe"}
+
+- id: MUT-015
+  contract_id: DEP-001
+  target: currencyservice
+  layer: manifest
+  file: kubernetes-manifests/currencyservice.yaml
+  expected_state: VIOLATED
+  description: 镜像改为 latest tag
+  trigger: 部署不可复现
+  oracle: {type: metric_presence, metric: image_tag_pinned}
+  mutation: {op: set, path: "spec.template.spec.containers[0].image", value: "currencyservice:latest"}
+
+- id: MUT-016
+  contract_id: RES-004
+  target: cartservice
+  layer: manifest
+  file: kubernetes-manifests/cartservice.yaml
+  expected_state: VIOLATED
+  description: 移除 readinessProbe
+  trigger: 购物车服务未就绪即承接请求
+  oracle: {type: slo_violation, metric: error_rate}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].readinessProbe"}
+
+- id: MUT-017
+  contract_id: SCA-002
+  target: shippingservice
+  layer: manifest
+  file: kubernetes-manifests/shippingservice.yaml
+  expected_state: VIOLATED
+  description: 移除 resources.limits
+  trigger: 资源无界
+  oracle: {type: metric_presence, metric: resource_limits}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].resources.limits"}
+
+- id: MUT-018
+  contract_id: DEP-002
+  target: checkoutservice
+  layer: manifest
+  file: kubernetes-manifests/checkoutservice.yaml
+  expected_state: VIOLATED
+  description: terminationGracePeriodSeconds=0
+  trigger: 下单请求在终止时被立即杀死
+  oracle: {type: slo_violation, metric: request_loss_during_termination}
+  mutation: {op: set, path: spec.template.spec.terminationGracePeriodSeconds, value: 0}
+
+- id: MUT-019
+  contract_id: RES-004
+  target: currencyservice
+  layer: manifest
+  file: kubernetes-manifests/currencyservice.yaml
+  expected_state: VIOLATED
+  description: 移除 livenessProbe
+  trigger: 汇率服务卡死无自动恢复
+  oracle: {type: slo_violation, metric: recovery_time}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].livenessProbe"}
+
+- id: MUT-020
+  contract_id: SCA-002
+  target: recommendationservice
+  layer: manifest
+  file: kubernetes-manifests/recommendationservice.yaml
+  expected_state: VIOLATED
+  description: 移除 resources.requests
+  trigger: 调度无资源预留
+  oracle: {type: metric_presence, metric: resource_requests}
+  mutation: {op: delete, path: "spec.template.spec.containers[0].resources.requests"}
+
+# ---------- 负样本（COMPLIANT，正确/加固配置） ----------
+- id: NEG-001
+  contract_id: RES-004
+  target: emailservice
+  layer: manifest
+  file: kubernetes-manifests/emailservice.yaml
+  expected_state: COMPLIANT
+  description: 缩短 readinessProbe 周期（加固，仍合规）
+  trigger: 无
+  oracle: {type: slo_violation, metric: error_rate}
+  mutation: {op: set, path: "spec.template.spec.containers[0].readinessProbe.periodSeconds", value: 2}
+
+- id: NEG-002
+  contract_id: SCA-002
+  target: paymentservice
+  layer: manifest
+  file: kubernetes-manifests/paymentservice.yaml
+  expected_state: COMPLIANT
+  description: 提高 CPU limit（加固，仍合规）
+  trigger: 无
+  oracle: {type: metric_presence, metric: resource_limits}
+  mutation: {op: set, path: "spec.template.spec.containers[0].resources.limits.cpu", value: "300m"}
+
+- id: NEG-003
+  contract_id: DEP-002
+  target: emailservice
+  layer: manifest
+  file: kubernetes-manifests/emailservice.yaml
+  expected_state: COMPLIANT
+  description: 延长优雅终止窗口（加固，仍合规）
+  trigger: 无
+  oracle: {type: slo_violation, metric: request_loss_during_termination}
+  mutation: {op: set, path: spec.template.spec.terminationGracePeriodSeconds, value: 30}
+
+- id: NEG-004
+  contract_id: RES-004
+  target: shippingservice
+  layer: manifest
+  file: kubernetes-manifests/shippingservice.yaml
+  expected_state: COMPLIANT
+  description: 显式设置 replicas=3（加固，仍合规）
+  trigger: 无
+  oracle: {type: slo_violation, metric: error_rate}
+  mutation: {op: set, path: spec.replicas, value: 3}
+
+- id: NEG-005
+  contract_id: SCA-002
+  target: currencyservice
+  layer: manifest
+  file: kubernetes-manifests/currencyservice.yaml
+  expected_state: COMPLIANT
+  description: 提高内存 request（加固，仍合规）
+  trigger: 无
+  oracle: {type: metric_presence, metric: resource_requests}
+  mutation: {op: set, path: "spec.template.spec.containers[0].resources.requests.memory", value: "128Mi"}
