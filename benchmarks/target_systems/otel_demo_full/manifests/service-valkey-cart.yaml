@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: valkey-cart
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: valkey-cart
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: valkey-cart
+  name: valkey-cart
+  namespace: otel-demo-full
+  resourceVersion: "34623654"
+  uid: d7dd55c0-00dc-489e-93db-72acd1faea7f
+spec:
+  clusterIP: 10.102.173.81
+  clusterIPs:
+  - 10.102.173.81
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: valkey-cart
+    port: 6379
+    protocol: TCP
+    targetPort: 6379
+  selector:
+    opentelemetry.io/name: valkey-cart
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

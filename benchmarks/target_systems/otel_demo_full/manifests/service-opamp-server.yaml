@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: opamp-server
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: opamp-server
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: opamp-server
+  name: opamp-server
+  namespace: otel-demo-full
+  resourceVersion: "34623634"
+  uid: d6df15b1-9883-4dac-859c-74dbdaa1e65d
+spec:
+  clusterIP: 10.96.33.4
+  clusterIPs:
+  - 10.96.33.4
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: opamp
+    port: 4320
+    protocol: TCP
+    targetPort: 4320
+  - name: opamp-ui
+    port: 4321
+    protocol: TCP
+    targetPort: 4321
+  selector:
+    opentelemetry.io/name: opamp-server
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

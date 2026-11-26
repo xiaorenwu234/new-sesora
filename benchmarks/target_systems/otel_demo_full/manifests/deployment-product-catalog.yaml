@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:32Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: product-catalog
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: product-catalog
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: product-catalog
+  name: product-catalog
+  namespace: otel-demo-full
+  resourceVersion: "34624458"
+  uid: ae7bc8db-ceed-4a08-b6da-298745fe4bef
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: product-catalog
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      labels:
+        app.kubernetes.io/component: product-catalog
+        app.kubernetes.io/name: product-catalog
+        app.kubernetes.io/version: 3.0.0
+        opentelemetry.io/name: product-catalog
+    spec:
+      containers:
+      - env:
+        - name: OTEL_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.labels['app.kubernetes.io/component']
+        - name: OTEL_COLLECTOR_NAME
+          value: otel-collector
+        - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+          value: cumulative
+        - name: PRODUCT_CATALOG_PORT
+          value: "8080"
+        - name: FLAGD_HOST
+          value: flagd
+        - name: FLAGD_PORT
+          value: "8013"
+        - name: GOMEMLIMIT
+          value: 16MiB
+        - name: DB_CONNECTION_STRING
+          value: postgres://astronomy_user:astronomy_password@astronomy-db/astronomy_db?sslmode=disable
+        - name: OTEL_SEMCONV_STABILITY_OPT_IN
+          value: database
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://$(OTEL_COLLECTOR_NAME):4317
+        - name: OTEL_CONFIG_FILE
+          value: /otel-config.yml
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.version=3.0.0,service.criticality=high
+        image: ghcr.io/open-telemetry/demo:3.0.0-product-catalog
+        imagePullPolicy: IfNotPresent
+        name: product-catalog
+        ports:
+        - containerPort: 8080
+          name: service
+          protocol: TCP
+        resources:
+          limits:
+            memory: 20Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /otel-config.yml
+          name: product-catalog-otel-config
+          subPath: otel-config.yml
+        - mountPath: /tmp
+          name: tmp
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - until nc -z -v -w30 astronomy-db 5432; do echo waiting for astronomy-db;
+          sleep 2; done;
+        image: docker.m.daocloud.io/library/busybox:1.36
+        imagePullPolicy: IfNotPresent
+        name: wait-for-astronomy-db
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: otel-demo-full
+      serviceAccountName: otel-demo-full
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: product-catalog-product-catalog-otel-config
+        name: product-catalog-otel-config
+      - emptyDir: {}
+        name: tmp
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-11-25T09:19:45Z"
+    lastUpdateTime: "2026-11-25T09:19:45Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-11-25T09:18:33Z"
+    lastUpdateTime: "2026-11-25T09:19:45Z"
+    message: ReplicaSet "product-catalog-6485647d8b" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

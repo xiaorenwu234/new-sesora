@@ -44,8 +44,8 @@ workload:
 
 budget:
   max_experiments: 8
-  max_wall_time_s: 14400    # 临时：真实推理 LLM 逐假设 review 耗时远超 3600s，实测后恢复
-  max_tokens: 1000000       # 临时：同上，原值 200000
+  max_wall_time_s: 3600
+  max_tokens: 200000
   lambda_cost: 0.15       # 效用函数成本权重
   mu_risk: 0.30           # 效用函数风险权重
 

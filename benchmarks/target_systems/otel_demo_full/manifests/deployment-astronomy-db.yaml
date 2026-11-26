@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:32Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: astronomy-db
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: astronomy-db
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: astronomy-db
+  name: astronomy-db
+  namespace: otel-demo-full
+  resourceVersion: "34624110"
+  uid: 867b3ee6-c8aa-471f-a751-01ba681c4ec5
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: astronomy-db
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        io.opentelemetry.discovery.metrics/config: |
+          username: monitoring_user
+          password: monitoring_password
+          metrics:
+            postgresql.blks_hit:
+              enabled: true
+            postgresql.blks_read:
+              enabled: true
+            postgresql.tup_fetched:
+              enabled: true
+            postgresql.tup_returned:
+              enabled: true
+            postgresql.tup_inserted:
+              enabled: true
+            postgresql.tup_updated:
+              enabled: true
+            postgresql.tup_deleted:
+              enabled: true
+            postgresql.deadlocks:
+              enabled: true
+          tls:
+            insecure: true
+        io.opentelemetry.discovery.metrics/enabled: "true"
+        io.opentelemetry.discovery.metrics/scraper: postgresql
+        resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      labels:
+        app.kubernetes.io/component: astronomy-db
+        app.kubernetes.io/name: astronomy-db
+        app.kubernetes.io/version: 3.0.0
+        opentelemetry.io/name: astronomy-db
+    spec:
+      containers:
+      - command:
+        - docker-entrypoint.sh
+        - postgres
+        - -c
+        - shared_preload_libraries=pg_stat_statements
+        env:
+        - name: POSTGRES_PASSWORD
+          value: changeit
+        image: docker.m.daocloud.io/library/postgres:18.4
+        imagePullPolicy: IfNotPresent
+        name: astronomy-db
+        ports:
+        - containerPort: 5432
+          name: service
+          protocol: TCP
+        resources:
+          limits:
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /docker-entrypoint-initdb.d
+          name: postgresql-init
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: otel-demo-full
+      serviceAccountName: otel-demo-full
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: postgresql-init
+        name: postgresql-init
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-11-25T09:18:37Z"
+    lastUpdateTime: "2026-11-25T09:18:37Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-11-25T09:18:32Z"
+    lastUpdateTime: "2026-11-25T09:18:37Z"
+    message: ReplicaSet "astronomy-db-595b5c8465" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

@@ -1,0 +1,174 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:32Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: flagd
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: flagd
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: flagd
+  name: flagd
+  namespace: otel-demo-full
+  resourceVersion: "34624239"
+  uid: 75f46865-9194-4d9f-bdfb-ec52bc03e9f8
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: flagd
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      labels:
+        app.kubernetes.io/component: flagd
+        app.kubernetes.io/name: flagd
+        app.kubernetes.io/version: 3.0.0
+        opentelemetry.io/name: flagd
+    spec:
+      containers:
+      - command:
+        - /flagd-build
+        - start
+        - --port
+        - "8013"
+        - --ofrep-port
+        - "8016"
+        - --uri
+        - file:./etc/flagd/demo.flagd.json
+        env:
+        - name: OTEL_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.labels['app.kubernetes.io/component']
+        - name: OTEL_COLLECTOR_NAME
+          value: otel-collector
+        - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+          value: cumulative
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://$(OTEL_COLLECTOR_NAME):4318
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: http/protobuf
+        - name: GOMEMLIMIT
+          value: 60MiB
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.version=3.0.0,service.criticality=low
+        image: ghcr.io/open-feature/flagd:v0.16.0
+        imagePullPolicy: IfNotPresent
+        name: flagd
+        ports:
+        - containerPort: 8013
+          name: rpc
+          protocol: TCP
+        - containerPort: 8016
+          name: ofrep
+          protocol: TCP
+        resources:
+          limits:
+            memory: 75Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/flagd
+          name: config-rw
+      - env:
+        - name: OTEL_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.labels['app.kubernetes.io/component']
+        - name: OTEL_COLLECTOR_NAME
+          value: otel-collector
+        - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+          value: cumulative
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://$(OTEL_COLLECTOR_NAME):4318
+        - name: FLAGD_UI_PORT
+          value: "4000"
+        - name: SECRET_KEY_BASE
+          value: yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
+        - name: PHX_HOST
+          value: localhost
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.version=3.0.0,service.criticality=low
+        image: ghcr.io/open-telemetry/demo:3.0.0-flagd-ui
+        imagePullPolicy: IfNotPresent
+        name: flagd-ui
+        ports:
+        - containerPort: 4000
+          name: service
+          protocol: TCP
+        resources:
+          limits:
+            memory: 250Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /app/data
+          name: config-rw
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - cp /config-ro/demo.flagd.json /config-rw/demo.flagd.json && cat /config-rw/demo.flagd.json
+        image: docker.m.daocloud.io/library/busybox:1.36
+        imagePullPolicy: IfNotPresent
+        name: init-config
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /config-ro
+          name: config-ro
+        - mountPath: /config-rw
+          name: config-rw
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: otel-demo-full
+      serviceAccountName: otel-demo-full
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: config-rw
+      - configMap:
+          defaultMode: 420
+          name: flagd-config
+        name: config-ro
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-11-25T09:18:42Z"
+    lastUpdateTime: "2026-11-25T09:18:42Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-11-25T09:18:34Z"
+    lastUpdateTime: "2026-11-25T09:18:42Z"
+    message: ReplicaSet "flagd-84594fb8d8" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T11:39:17Z"
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/instance: otel-demo-full
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: prometheus
+    app.kubernetes.io/version: v3.13.1
+    helm.sh/chart: prometheus-29.18.0
+  name: prometheus
+  namespace: otel-demo-full
+  resourceVersion: "34648587"
+  uid: badafbec-2ce9-47a4-9f47-e6a26032828e
+spec:
+  clusterIP: 10.105.219.221
+  clusterIPs:
+  - 10.105.219.221
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/instance: otel-demo-full
+    app.kubernetes.io/name: prometheus
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

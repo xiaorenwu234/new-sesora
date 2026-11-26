@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: kafka
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: kafka
+  name: kafka
+  namespace: otel-demo-full
+  resourceVersion: "34623662"
+  uid: d4339474-52d9-40b4-aae9-de528f09a91e
+spec:
+  clusterIP: 10.102.213.55
+  clusterIPs:
+  - 10.102.213.55
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: plaintext
+    port: 9092
+    protocol: TCP
+    targetPort: 9092
+  - name: controller
+    port: 9093
+    protocol: TCP
+    targetPort: 9093
+  selector:
+    opentelemetry.io/name: kafka
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

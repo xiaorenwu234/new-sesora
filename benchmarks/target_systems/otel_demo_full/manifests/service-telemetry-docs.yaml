@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: telemetry-docs
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: telemetry-docs
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: telemetry-docs
+  name: telemetry-docs
+  namespace: otel-demo-full
+  resourceVersion: "34623687"
+  uid: 5488d1ce-97a2-4ece-9c08-624b9dc50a85
+spec:
+  clusterIP: 10.97.28.116
+  clusterIPs:
+  - 10.97.28.116
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-service
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    opentelemetry.io/name: telemetry-docs
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T11:39:17Z"
+  labels:
+    app.kubernetes.io/instance: otel-demo-full
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/version: 13.1.0
+    helm.sh/chart: grafana-12.7.2
+  name: grafana
+  namespace: otel-demo-full
+  resourceVersion: "34648581"
+  uid: 58cbc3f2-b086-4882-ae69-f0a1cc80d084
+spec:
+  clusterIP: 10.100.52.47
+  clusterIPs:
+  - 10.100.52.47
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: service
+    port: 80
+    protocol: TCP
+    targetPort: grafana
+  selector:
+    app.kubernetes.io/instance: otel-demo-full
+    app.kubernetes.io/name: grafana
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

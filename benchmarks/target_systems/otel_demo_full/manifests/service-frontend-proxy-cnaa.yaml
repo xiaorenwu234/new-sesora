@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"frontend-proxy-cnaa","namespace":"otel-demo-full"},"spec":{"ports":[{"name":"http","nodePort":31218,"port":8080,"targetPort":8080}],"selector":{"opentelemetry.io/name":"frontend-proxy"},"type":"NodePort"}}
+  creationTimestamp: "2026-11-26T10:15:05Z"
+  name: frontend-proxy-cnaa
+  namespace: otel-demo-full
+  resourceVersion: "34886597"
+  uid: 5722ea5b-b477-4e0a-871b-7287d84e6b20
+spec:
+  clusterIP: 10.103.218.48
+  clusterIPs:
+  - 10.103.218.48
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    nodePort: 31218
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    opentelemetry.io/name: frontend-proxy
+  sessionAffinity: None
+  type: NodePort
+status:
+  loadBalancer: {}

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: chatbot
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: chatbot
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: chatbot
+  name: chatbot
+  namespace: otel-demo-full
+  resourceVersion: "34623615"
+  uid: deb841a5-f63b-44b8-81c5-a89cdffe2116
+spec:
+  clusterIP: 10.110.65.145
+  clusterIPs:
+  - 10.110.65.145
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-service
+    port: 7860
+    protocol: TCP
+    targetPort: 7860
+  selector:
+    opentelemetry.io/name: chatbot
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

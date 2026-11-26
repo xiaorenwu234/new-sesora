@@ -1,4 +1,4 @@
-"""CLI 入口：collect / analyze / assess / experiment / evaluate / mutation / cleanup。
+"""CLI 入口：collect / analyze / assess / experiment / evaluate / mutation / cleanup / onboard。
 
 用法示例（sesora conda 环境）：
     python cli.py assess --static-only          # 静态评估（不注入故障）
@@ -10,6 +10,7 @@
     python cli.py evaluate ablation --variant no_cost
     python cli.py mutation apply MUT-001 --deploy
     python cli.py cleanup                       # 紧急清理所有 cnaa- 故障 CR
+    python cli.py onboard --namespace my-app --kubeconfig kc --repo-path /src  # 自动适配新系统
 """
 from __future__ import annotations
 
@@ -141,6 +142,12 @@ def cmd_cleanup(args):
     return 0
 
 
+def cmd_onboard(args):
+    """自动适配新目标系统：探测集群+源码 → 生成画像/config/expose.sh → 验证。"""
+    from onboarding.runner import run_onboard
+    return run_onboard(args)
+
+
 def _load_report(path):
     p = path if path.endswith(".json") else f"{path}/report.json"
     import os
@@ -247,6 +254,14 @@ def main():
     sp.add_argument("--params", default=None, help="JSON 参数覆盖")
     sub.add_parser("cleanup", help="紧急清理所有 cnaa- 故障 CR")
 
+    sp = sub.add_parser("onboard", help="自动适配新目标系统")
+    sp.add_argument("--namespace", required=True, help="K8s namespace")
+    sp.add_argument("--kubeconfig", required=True, help="kubeconfig 路径")
+    sp.add_argument("--repo-path", required=True, help="源码仓库路径")
+    sp.add_argument("--config", default=None, help="基础 config（可选，用于 LLM 配置）")
+    sp.add_argument("--node-ip", default=None, help="节点 IP（默认从 pod 推断）")
+    sp.add_argument("--dry-run", action="store_true", help="仅生成文件不执行")
+
     sp = sub.add_parser("evaluate", help="评估指标/基线/消融/策略对比")
     sp.add_argument("--profile", default=None)
     sp.add_argument("--run-id", default=None)
@@ -287,7 +302,8 @@ def main():
     args = p.parse_args()
     fn = {"collect": cmd_collect, "analyze": cmd_analyze, "assess": cmd_assess,
           "experiment": cmd_experiment, "cleanup": cmd_cleanup,
-          "evaluate": cmd_evaluate, "mutation": cmd_mutation}[args.cmd]
+          "evaluate": cmd_evaluate, "mutation": cmd_mutation,
+          "onboard": cmd_onboard}[args.cmd]
     sys.exit(fn(args))
 
 

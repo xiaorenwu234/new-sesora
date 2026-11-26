@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "3"
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:32Z"
+  generation: 4
+  labels:
+    app.kubernetes.io/component: fraud-detection
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: fraud-detection
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: fraud-detection
+  name: fraud-detection
+  namespace: otel-demo-full
+  resourceVersion: "34651989"
+  uid: 8c45d869-29d7-4c5c-abad-e00644f4dc0f
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: fraud-detection
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      labels:
+        app.kubernetes.io/component: fraud-detection
+        app.kubernetes.io/name: fraud-detection
+        app.kubernetes.io/version: 3.0.0
+        opentelemetry.io/name: fraud-detection
+    spec:
+      containers:
+      - env:
+        - name: OTEL_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.labels['app.kubernetes.io/component']
+        - name: OTEL_COLLECTOR_NAME
+          value: otel-collector
+        - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+          value: cumulative
+        - name: KAFKA_ADDR
+          value: kafka:9092
+        - name: KAFKA_TOPIC
+          value: orders
+        - name: FLAGD_HOST
+          value: flagd
+        - name: FLAGD_PORT
+          value: "8013"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://$(OTEL_COLLECTOR_NAME):4318
+        - name: OTEL_INSTRUMENTATION_KAFKA_EXPERIMENTAL_SPAN_ATTRIBUTES
+          value: "true"
+        - name: OTEL_INSTRUMENTATION_MESSAGING_EXPERIMENTAL_RECEIVE_TELEMETRY_ENABLED
+          value: "true"
+        - name: OTEL_EXPERIMENTAL_SDK_TELEMETRY_VERSION
+          value: latest
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.version=3.0.0,service.criticality=low
+        image: ghcr.io/open-telemetry/demo:3.0.0-fraud-detection
+        imagePullPolicy: IfNotPresent
+        name: fraud-detection
+        resources:
+          limits:
+            memory: 300Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - until nc -z -v -w30 kafka 9092; do echo waiting for kafka; sleep 2; done;
+        image: docker.m.daocloud.io/library/busybox:1.36
+        imagePullPolicy: IfNotPresent
+        name: wait-for-kafka
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: otel-demo-full
+      serviceAccountName: otel-demo-full
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-11-25T11:58:52Z"
+    lastUpdateTime: "2026-11-25T11:58:52Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-11-25T09:18:33Z"
+    lastUpdateTime: "2026-11-25T11:58:52Z"
+    message: ReplicaSet "fraud-detection-7878c4c995" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 4
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

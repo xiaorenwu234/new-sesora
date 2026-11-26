@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: flagd
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: flagd
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: flagd
+  name: flagd
+  namespace: otel-demo-full
+  resourceVersion: "34623695"
+  uid: 4d94c1a4-8cae-4a1a-aa38-88d765045d22
+spec:
+  clusterIP: 10.108.105.219
+  clusterIPs:
+  - 10.108.105.219
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: rpc
+    port: 8013
+    protocol: TCP
+    targetPort: 8013
+  - name: ofrep
+    port: 8016
+    protocol: TCP
+    targetPort: 8016
+  - name: tcp-service-0
+    port: 4000
+    protocol: TCP
+    targetPort: 4000
+  selector:
+    opentelemetry.io/name: flagd
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

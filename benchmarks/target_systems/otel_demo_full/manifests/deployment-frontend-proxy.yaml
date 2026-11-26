@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:32Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: frontend-proxy
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: frontend-proxy
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: frontend-proxy
+  name: frontend-proxy
+  namespace: otel-demo-full
+  resourceVersion: "34624217"
+  uid: 2e7c6e52-05d6-4c87-9a46-bacade3f109c
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: frontend-proxy
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        io.opentelemetry.discovery.metrics/config: |
+          targets:
+            - endpoint: "http://`endpoint`"
+        io.opentelemetry.discovery.metrics/enabled: "true"
+        io.opentelemetry.discovery.metrics/scraper: httpcheck
+        resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      labels:
+        app.kubernetes.io/component: frontend-proxy
+        app.kubernetes.io/name: frontend-proxy
+        app.kubernetes.io/version: 3.0.0
+        opentelemetry.io/name: frontend-proxy
+    spec:
+      containers:
+      - env:
+        - name: OTEL_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.labels['app.kubernetes.io/component']
+        - name: OTEL_COLLECTOR_NAME
+          value: otel-collector
+        - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+          value: cumulative
+        - name: ENVOY_PORT
+          value: "8080"
+        - name: ENVOY_ADDR
+          value: 0.0.0.0
+        - name: ENVOY_ADMIN_PORT
+          value: "10000"
+        - name: FLAGD_HOST
+          value: flagd
+        - name: FLAGD_PORT
+          value: "8013"
+        - name: FLAGD_UI_HOST
+          value: flagd
+        - name: FLAGD_UI_PORT
+          value: "4000"
+        - name: FRONTEND_HOST
+          value: frontend
+        - name: FRONTEND_PORT
+          value: "8080"
+        - name: GRAFANA_HOST
+          value: grafana
+        - name: GRAFANA_PORT
+          value: "80"
+        - name: IMAGE_PROVIDER_HOST
+          value: image-provider
+        - name: IMAGE_PROVIDER_PORT
+          value: "8081"
+        - name: JAEGER_HOST
+          value: jaeger
+        - name: JAEGER_UI_PORT
+          value: "16686"
+        - name: CHATBOT_HOST
+          value: chatbot
+        - name: CHATBOT_PORT
+          value: "7860"
+        - name: OPAMP_SERVER_HOST
+          value: opamp-server
+        - name: OPAMP_SERVER_UI_PORT
+          value: "4321"
+        - name: FIREPIT_HOST
+          value: firepit
+        - name: FIREPIT_PORT
+          value: "8080"
+        - name: TELEMETRY_DOCS_HOST
+          value: telemetry-docs
+        - name: TELEMETRY_DOCS_PORT
+          value: "8000"
+        - name: OTEL_COLLECTOR_HOST
+          value: $(OTEL_COLLECTOR_NAME)
+        - name: OTEL_COLLECTOR_PORT_GRPC
+          value: "4317"
+        - name: OTEL_COLLECTOR_PORT_HTTP
+          value: "4318"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.version=3.0.0,service.criticality=critical
+        image: ghcr.io/open-telemetry/demo:3.0.0-frontend-proxy
+        imagePullPolicy: IfNotPresent
+        name: frontend-proxy
+        ports:
+        - containerPort: 8080
+          name: service
+          protocol: TCP
+        resources:
+          limits:
+            memory: 90Mi
+        securityContext:
+          runAsGroup: 101
+          runAsNonRoot: true
+          runAsUser: 101
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: otel-demo-full
+      serviceAccountName: otel-demo-full
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-11-25T09:18:41Z"
+    lastUpdateTime: "2026-11-25T09:18:41Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-11-25T09:18:34Z"
+    lastUpdateTime: "2026-11-25T09:18:41Z"
+    message: ReplicaSet "frontend-proxy-f4f8ff8cd" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

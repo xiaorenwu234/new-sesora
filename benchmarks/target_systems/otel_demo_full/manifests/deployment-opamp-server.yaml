@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:32Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: opamp-server
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: opamp-server
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: opamp-server
+  name: opamp-server
+  namespace: otel-demo-full
+  resourceVersion: "34624240"
+  uid: 90ebd2da-c789-4a0a-9b01-6f02c4c34a2c
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: opamp-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      labels:
+        app.kubernetes.io/component: opamp-server
+        app.kubernetes.io/name: opamp-server
+        app.kubernetes.io/version: 3.0.0
+        opentelemetry.io/name: opamp-server
+    spec:
+      containers:
+      - command:
+        - /opamp-server
+        - -no-tls
+        image: ghcr.io/open-telemetry/demo:3.0.0-opamp-server
+        imagePullPolicy: IfNotPresent
+        name: opamp-server
+        ports:
+        - containerPort: 4320
+          name: opamp
+          protocol: TCP
+        - containerPort: 4321
+          name: opamp-ui
+          protocol: TCP
+        resources:
+          limits:
+            memory: 65Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: otel-demo-full
+      serviceAccountName: otel-demo-full
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-11-25T09:18:42Z"
+    lastUpdateTime: "2026-11-25T09:18:42Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-11-25T09:18:34Z"
+    lastUpdateTime: "2026-11-25T09:18:42Z"
+    message: ReplicaSet "opamp-server-6fc7fd74b5" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

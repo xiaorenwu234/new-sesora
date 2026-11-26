@@ -220,6 +220,36 @@ class TestNormalizeProposal(unittest.TestCase):
         self.assertEqual(c["params"]["interface"], "eth0")
         self.assertNotIn("bogus_key", c["params"])
 
+    def test_readonly_deepdive_none_fault_target(self):
+        # 只读深挖无故障对象：LLM 置 ft="none"/空/自指均应规整为 ot 并通过；
+        # 观测侧幻觉仍拒；protected 服务对只读动作豁免。
+        cfg = FakeCfg()
+        cfg.safety["allowed_actions"] = ["LOG_DEEP_DIVE", "CONFIG_AUDIT", "NETWORK_DELAY"]
+        contract = SimpleNamespace(
+            id="OBS-002", name="ErrSig", dimension="observability",
+            missing_evidence=["error_signal_during_fault"], actions=["LOG_DEEP_DIVE"],
+            oracle={"type": "error_signal_presence"})
+        h = Hypothesis(contract_id="OBS-002", target="frontend", statement="x",
+                       missing_evidence=["error_signal_during_fault"])
+        hyps = {h.hypothesis_id: h}
+        contracts = {"OBS-002": contract}
+        for ft in ("none", "", "frontend"):
+            c = ag.normalize_proposal(
+                {"hypothesis_id": h.hypothesis_id, "action_type": "LOG_DEEP_DIVE",
+                 "fault_target": ft, "observe_target": "frontend"},
+                hyps, contracts, cfg, self.g)
+            self.assertIsNotNone(c, f"ft={ft!r} 应通过")
+            self.assertEqual(c["fault_target"], "frontend")
+        self.assertIsNone(ag.normalize_proposal(
+            {"hypothesis_id": h.hypothesis_id, "action_type": "LOG_DEEP_DIVE",
+             "fault_target": "none", "observe_target": "ghost-observer"},
+            hyps, contracts, cfg, self.g))
+        c = ag.normalize_proposal(
+            {"hypothesis_id": h.hypothesis_id, "action_type": "CONFIG_AUDIT",
+             "fault_target": "none", "observe_target": "redis-cart"},
+            hyps, contracts, cfg, self.g)
+        self.assertIsNotNone(c, "只读动作对 protected 服务应豁免")
+
 
 class TestSafeSet(unittest.TestCase):
     def _selector(self):

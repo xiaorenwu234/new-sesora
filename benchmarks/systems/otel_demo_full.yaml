@@ -1,0 +1,80 @@
+# OpenTelemetry Demo 完整版（otel-demo-full）系统画像。
+# 与 astronomy_shop.yaml 同构（同一 Helm chart 0.41.0 / appVersion 3.0.0），
+# 覆盖完整版全部 28 个 Deployment；命名采用连字符风格。
+# 用法：cli.py assess --config benchmarks/target_systems/otel_demo_full/config.yaml \
+#         --profile benchmarks/systems/otel_demo_full.yaml
+system_id: otel-demo-full
+namespace: otel-demo-full
+source_root: src
+
+critical_services:
+  - frontend
+  - checkout
+  - cart
+  - payment
+  - product-catalog
+  - currency
+  - shipping
+
+stateful_services:
+  - astronomy-db
+  - valkey-cart
+  - kafka
+  - opensearch
+
+infra_services:
+  - flagd
+  - image-provider
+  - load-generator
+  - jaeger
+  - otel-collector
+  - grafana
+  - prometheus
+  - agent
+  - mcp
+  - opamp-server
+  - telemetry-docs
+
+# 业务写操作（人工代码审查标注）
+write_operations:
+  cart:
+    - {op: add_item, store: valkey-cart, idempotent: unknown}
+  checkout:
+    - {op: place_order, store: kafka+payment+cart-clear, idempotent: unknown}
+  payment:
+    - {op: charge, store: external-payment, idempotent: false}
+  accounting:
+    - {op: process_order, store: kafka-consume+astronomy-db, idempotent: unknown}
+  fraud-detection:
+    - {op: detect_fraud, store: kafka-consume, idempotent: unknown}
+
+# 源码目录 -> K8s Deployment -> OTel service.name 显式映射（28 Deployment）
+service_mapping:
+  accounting: {deployment: accounting, otel_name: accounting, source_dir: src/accounting}
+  ad: {deployment: ad, otel_name: ad, source_dir: src/ad}
+  agent: {deployment: agent, otel_name: agent, source_dir: src/agent}
+  astronomy-db: {deployment: astronomy-db, otel_name: astronomy-db, source_dir: null}
+  cart: {deployment: cart, otel_name: cart, source_dir: src/cart}
+  chatbot: {deployment: chatbot, otel_name: chatbot, source_dir: src/chatbot}
+  checkout: {deployment: checkout, otel_name: checkout, source_dir: src/checkout}
+  currency: {deployment: currency, otel_name: currency, source_dir: src/currency}
+  email: {deployment: email, otel_name: email, source_dir: src/email}
+  flagd: {deployment: flagd, otel_name: flagd, source_dir: null}
+  fraud-detection: {deployment: fraud-detection, otel_name: fraud-detection, source_dir: src/fraud-detection}
+  frontend: {deployment: frontend, otel_name: frontend, source_dir: src/frontend}
+  frontend-proxy: {deployment: frontend-proxy, otel_name: frontend-proxy, source_dir: src/frontend-proxy}
+  grafana: {deployment: grafana, otel_name: grafana, source_dir: null}
+  image-provider: {deployment: image-provider, otel_name: image-provider, source_dir: src/image-provider}
+  jaeger: {deployment: jaeger, otel_name: jaeger, source_dir: null}
+  kafka: {deployment: kafka, otel_name: kafka, source_dir: null}
+  load-generator: {deployment: load-generator, otel_name: load-generator, source_dir: src/load-generator}
+  mcp: {deployment: mcp, otel_name: mcp, source_dir: src/mcp}
+  opamp-server: {deployment: opamp-server, otel_name: opamp-server, source_dir: src/opamp-server}
+  payment: {deployment: payment, otel_name: payment, source_dir: src/payment}
+  product-catalog: {deployment: product-catalog, otel_name: product-catalog, source_dir: src/product-catalog}
+  prometheus: {deployment: prometheus, otel_name: prometheus, source_dir: null}
+  quote: {deployment: quote, otel_name: quote, source_dir: src/quote}
+  recommendation: {deployment: recommendation, otel_name: recommendation, source_dir: src/recommendation}
+  shipping: {deployment: shipping, otel_name: shipping, source_dir: src/shipping}
+  telemetry-docs: {deployment: telemetry-docs, otel_name: telemetry-docs, source_dir: src/telemetry-docs}
+  valkey-cart: {deployment: valkey-cart, otel_name: valkey-cart, source_dir: null}

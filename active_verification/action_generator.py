@@ -277,14 +277,22 @@ def normalize_proposal(prop: dict, hyps_by_id: dict, contracts_by_id: dict,
             not _oracle_compatible(contracts_by_id[h.contract_id]):
         return None
     ft, ot = prop.get("fault_target"), prop.get("observe_target")
-    if not ft or not ot:
+    if not ot:
         return None
     # LLM 自由文本目标必须存在于图谱（静态枚举路径由 DEPENDS_ON 边隐式保证）
     services = set(graph.services())
-    if ft not in services or ot not in services:
+    if ot not in services:
         return None
-    if ft in set(cfg.safety.get("protected_services", [])):
-        return None
+    if action in READONLY_ACTIONS:
+        # 只读深挖无故障对象：LLM 常置 fault_target="none"/空/自指，
+        # 统一规整为 observe_target（与静态 _targets 的 (svc,svc) 一致）；
+        # 只读动作豁免 protected 门禁（safety_controller 同语义）。
+        ft = ot
+    else:
+        if not ft or ft not in services:
+            return None
+        if ft in set(cfg.safety.get("protected_services", [])):
+            return None
     params = _clamp_params(prop.get("params"), _params(action, h, graph, cfg))
     provides = sorted(ACTION_PROVIDES[action])
     return {

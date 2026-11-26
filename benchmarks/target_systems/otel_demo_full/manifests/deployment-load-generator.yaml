@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "2"
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:32Z"
+  generation: 3
+  labels:
+    app.kubernetes.io/component: load-generator
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: load-generator
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: load-generator
+  name: load-generator
+  namespace: otel-demo-full
+  resourceVersion: "34854388"
+  uid: e6d63e5a-e56f-408a-9d87-ae53f896c09c
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: load-generator
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      labels:
+        app.kubernetes.io/component: load-generator
+        app.kubernetes.io/name: load-generator
+        app.kubernetes.io/version: 3.0.0
+        opentelemetry.io/name: load-generator
+    spec:
+      containers:
+      - env:
+        - name: OTEL_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.labels['app.kubernetes.io/component']
+        - name: OTEL_COLLECTOR_NAME
+          value: otel-collector
+        - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+          value: cumulative
+        - name: LOAD_GENERATOR_VUS
+          value: "5"
+        - name: K6_TARGET_URL
+          value: http://frontend-proxy:8080
+        - name: K6_BROWSER_ENABLED
+          value: "true"
+        - name: K6_BROWSER_ARGS
+          value: no-sandbox,disable-dev-shm-usage
+        - name: FLAGD_HOST
+          value: flagd
+        - name: FLAGD_PORT
+          value: "8013"
+        - name: FLAGD_OFREP_PORT
+          value: "8016"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://$(OTEL_COLLECTOR_NAME):4318
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: http/protobuf
+        - name: K6_OTEL_EXPORTER_PROTOCOL
+          value: http/protobuf
+        - name: K6_OTEL_HTTP_EXPORTER_ENDPOINT
+          value: $(OTEL_COLLECTOR_NAME):4318
+        - name: K6_OTEL_HTTP_EXPORTER_INSECURE
+          value: "true"
+        - name: K6_OTEL_METRIC_PREFIX
+          value: k6.
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.version=3.0.0,service.criticality=low
+        image: ghcr.io/open-telemetry/demo:3.0.0-load-generator
+        imagePullPolicy: IfNotPresent
+        name: load-generator
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            memory: 128Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: otel-demo-full
+      serviceAccountName: otel-demo-full
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-11-25T09:18:33Z"
+    lastUpdateTime: "2026-11-25T11:57:38Z"
+    message: ReplicaSet "load-generator-69d86d56f8" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2026-11-26T07:25:58Z"
+    lastUpdateTime: "2026-11-26T07:25:58Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  observedGeneration: 3
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

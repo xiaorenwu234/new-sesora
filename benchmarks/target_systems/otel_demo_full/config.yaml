@@ -1,0 +1,81 @@
+# OpenTelemetry Demo 完整版（otel-demo-full）评估配置 overlay。
+# 用法：python cli.py assess --config benchmarks/target_systems/otel_demo_full/config.yaml \
+#         --profile benchmarks/systems/otel_demo_full.yaml
+# 入口暴露：先运行同目录 expose.sh（NodePort + live manifest 导出，幂等）。
+system_id: otel-demo-full
+
+source:
+  repo_path: /home/xueht/new-sesora/example/opentelemetry-demo
+  commit: null
+  languages: [python, go, java, javascript, csharp, ruby, php, rust, cpp]
+
+kubernetes:
+  kubeconfig: /home/xueht/new-sesora/kubeconfig
+  namespace: otel-demo-full
+  # helm 部署无独立 manifest 目录；expose.sh 导出 live deployment/service 快照
+  manifest_dir: /home/xueht/new-sesora/cloud-native-active-assessment/benchmarks/target_systems/otel_demo_full/manifests
+
+runtime:
+  jaeger_url: http://192.168.5.51:31687/jaeger/ui   # jaeger-cnaa-query-full NodePort，2.x base path
+  prometheus_url: http://192.168.5.51:31091         # prometheus-cnaa-query NodePort
+  lookback: 1h
+  trace_limit: 200
+
+neo4j:
+  uri: bolt://127.0.0.1:7687
+  user: neo4j
+  password: cnaa-research-2026
+  database: neo4j
+
+llm:
+  base_url: http://127.0.0.1:8000/v1
+  api_key_env: CNAA_LLM_API_KEY
+  model: qwen3.8-27b
+  temperature: 0.1
+  enable_thinking: true
+
+workload:
+  frontend_url: http://192.168.5.51:31218   # frontend-proxy-cnaa NodePort（Envoy 路由 /api/*）
+  locust_file: benchmarks/workloads/astronomy_workload.py
+  users: 20
+  spawn_rate: 5
+  duration_s: 120
+
+exploration:
+  max_steps: 6
+  max_tokens_per_session: 20000
+  result_truncate_chars: 2000
+
+budget:
+  max_experiments: 8
+  max_wall_time_s: 3600
+  max_tokens: 200000
+  lambda_cost: 0.15
+  mu_risk: 0.30
+
+safety:
+  allowed_namespaces: [otel-demo-full]
+  allowed_actions:
+    - POD_TERMINATION
+    - NETWORK_DELAY
+    - NETWORK_LOSS
+    - CPU_PRESSURE
+    - MEMORY_PRESSURE
+    - DEPENDENCY_UNAVAILABLE
+    - LOAD_VARIATION
+    - OBSERVATION_ONLY
+    - LOG_DEEP_DIVE
+    - TRACE_DRILLDOWN
+    - METRIC_DRILLDOWN
+    - CONFIG_AUDIT
+    - SOURCE_INSPECTION
+  max_fault_duration_s: 180
+  max_affected_pods: 1
+  protected_services: [astronomy-db, valkey-cart, kafka, opensearch, flagd,
+                       load-generator, jaeger, otel-collector, grafana, prometheus,
+                       agent, mcp, opamp-server, telemetry-docs]
+  require_baseline: true
+  require_recovery_check: true
+
+slo_file: benchmarks/slo/astronomy_slo.yaml
+output_dir: runs

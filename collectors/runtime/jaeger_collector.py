@@ -31,7 +31,12 @@ def available(cfg: Config) -> bool:
 
 
 def list_services(cfg: Config) -> list[str]:
-    return _get(cfg, "/api/services").get("data", []) or []
+    # 软失败：Jaeger 短暂不可用（如 pod 重启）时降级为空清单，
+    # 下游 measure_* 产出 None 指标 -> Oracle 判 INCONCLUSIVE，而非崩溃
+    try:
+        return _get(cfg, "/api/services").get("data", []) or []
+    except Exception:
+        return []
 
 
 def _is_error_span(span: dict) -> bool:

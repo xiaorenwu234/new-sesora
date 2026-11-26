@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: image-provider
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: image-provider
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: image-provider
+  name: image-provider
+  namespace: otel-demo-full
+  resourceVersion: "34623607"
+  uid: ad15331a-b78c-4d18-bfc3-d7cedd5b49bc
+spec:
+  clusterIP: 10.100.210.204
+  clusterIPs:
+  - 10.100.210.204
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-service
+    port: 8081
+    protocol: TCP
+    targetPort: 8081
+  selector:
+    opentelemetry.io/name: image-provider
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

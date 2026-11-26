@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: otel-demo-full
+    meta.helm.sh/release-namespace: otel-demo-full
+  creationTimestamp: "2026-11-25T09:18:30Z"
+  labels:
+    app.kubernetes.io/component: astronomy-db
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: astronomy-db
+    app.kubernetes.io/part-of: opentelemetry-demo
+    app.kubernetes.io/version: 3.0.0
+    helm.sh/chart: opentelemetry-demo-0.41.0
+    opentelemetry.io/name: astronomy-db
+  name: astronomy-db
+  namespace: otel-demo-full
+  resourceVersion: "34623656"
+  uid: fd179807-96c7-4221-bee2-f03550aa6b24
+spec:
+  clusterIP: 10.102.118.215
+  clusterIPs:
+  - 10.102.118.215
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-service
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    opentelemetry.io/name: astronomy-db
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
