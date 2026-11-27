@@ -58,6 +58,19 @@ python cli.py onboard \
 
 Onboard 流程自动完成：集群拓扑探测 → 源码扫描 → 服务分类 → NodePort 分配 → 生成画像/config/expose.sh → 执行暴露脚本 → 采集验证。产物位于 `benchmarks/target_systems/<system_id>/`。
 
+### 内置 Benchmark 系统
+
+CNAA 内置四套受测系统画像，覆盖不同技术栈与规模：
+
+| 系统 | 服务数 | 技术栈 | 可观测栈 |
+|------|--------|--------|----------|
+| Online Boutique | 12 | Go/Node.js/Python/C#/Java | Jaeger（外部） |
+| OTel Demo Full | 28 | 多语言（9 种） | Jaeger + Prometheus + Grafana + OpenSearch |
+| Astronomy Shop | 15 | 同 OTel Demo（裁剪版） | Jaeger（外部） |
+| TrainTicket | 46+ | Java Spring Cloud | 无（纯静态评估） |
+
+各系统的部署方式、访问入口、评估命令与已知限制详见 [Benchmark 系统指南](docs/BENCHMARK_SYSTEMS.md)。
+
 ## CLI 命令参考
 
 | 命令 | 说明 |
